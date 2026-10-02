@@ -14,7 +14,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-let danhSachCauHoi = [];
+let danhSachCauHoi = [];      // Mảng khi tạo câu hỏi
+let quizDataGlobal = [];      // Mảng chứa đề bài khi làm bài
+let currentQuestionIndex = 0; // Theo dõi đang ở câu số mấy
 
 // Kiểm tra URL
 const urlParams = new URLSearchParams(window.location.search);
@@ -113,59 +115,72 @@ document.getElementById('btn-save').addEventListener('click', async () => {
     }
 });
 
-// Hàm hiển thị bài làm và Xử lý nút Nộp bài
+// ---------------- PHẦN MỚI THAY ĐỔI: HIỂN THỊ TỪNG CÂU ----------------
 async function loadQuiz(id) {
     try {
         const docSnap = await getDoc(doc(db, "quizzes", id));
         if (docSnap.exists()) {
-            const data = docSnap.data();
-            let html = '';
-            
-            data.danhSach.forEach((cauHoi, index) => {
-                html += `<div class="card" style="margin-top: 20px; border-left: 4px solid #8ab4f8;">
-                            <strong>Câu ${index + 1}:</strong> ${cauHoi.question}
-                         </div>`;
-                
-                if (!cauHoi.type || cauHoi.type === 'trac-nghiem') {
-                    cauHoi.options.forEach((opt, i) => {
-                        const letter = String.fromCharCode(65 + i); 
-                        html += `
-                            <div class="card option" onclick="this.classList.toggle('active')">
-                                <strong>${letter}.</strong> ${opt.text}
-                                <div class="explanation">${opt.exp}</div>
-                            </div>`;
-                    });
-                } else {
-                    html += `
-                        <textarea class="user-answer" placeholder="Nhập câu trả lời của bạn vào đây..."></textarea>
-                        <div class="card option" onclick="this.classList.toggle('active')" style="margin-top: 10px; background-color: #202124;">
-                            <strong>👁️ Bấm vào đây để xem đáp án gốc</strong>
-                            <div class="explanation">${cauHoi.answerKey}</div>
-                        </div>`;
-                }
-            });
-            
-            // Nút Nộp bài ở cuối
-            html += `<button id="btn-submit" style="margin-top: 25px; margin-bottom: 50px; width: 100%; padding: 14px; font-size: 16px;">Nộp bài</button>`;
-
-            const container = document.getElementById('quiz-content');
-            container.innerHTML = html;
-            
-            // Sự kiện bấm Nộp bài
-            document.getElementById('btn-submit').addEventListener('click', () => {
-                document.querySelectorAll('.user-answer').forEach(el => el.disabled = true);
-                document.getElementById('btn-submit').innerText = "Đã nộp bài!";
-                document.getElementById('btn-submit').disabled = true;
-                alert("Bạn đã hoàn thành và nộp bài thành công!");
-            });
-
-            if (typeof renderMathInElement === "function") {
-                renderMathInElement(container, { delimiters: [{left: "$$", right: "$$", display: false}] });
-            }
+            quizDataGlobal = docSnap.data().danhSach;
+            currentQuestionIndex = 0; // Bắt đầu từ câu đầu tiên
+            renderCurrentQuestion();
         } else {
             document.getElementById('quiz-content').innerHTML = "Không tìm thấy đề bài!";
         }
     } catch (err) {
         document.getElementById('quiz-content').innerHTML = "Lỗi tải đề: " + err.message;
     }
+}
+
+// Hàm vẽ đúng 1 câu hỏi lên màn hình
+function renderCurrentQuestion() {
+    const container = document.getElementById('quiz-content');
+
+    // Nếu đã làm hết câu hỏi -> Hiện thông báo hoàn thành
+    if (currentQuestionIndex >= quizDataGlobal.length) {
+        container.innerHTML = `<div class="card" style="text-align: center; border-left: 4px solid #4caf50;">
+                                    <h2>🎉 Chúc mừng! Bạn đã hoàn thành bài làm.</h2>
+                               </div>`;
+        return;
+    }
+
+    // Lấy câu hỏi hiện tại
+    const cauHoi = quizDataGlobal[currentQuestionIndex];
+    
+    let html = `<div class="card" style="margin-top: 20px; border-left: 4px solid #8ab4f8;">
+                    <strong>Câu ${currentQuestionIndex + 1} / ${quizDataGlobal.length}:</strong> ${cauHoi.question}
+                </div>`;
+    
+    if (!cauHoi.type || cauHoi.type === 'trac-nghiem') {
+        cauHoi.options.forEach((opt, i) => {
+            const letter = String.fromCharCode(65 + i); 
+            html += `
+                <div class="card option" onclick="this.classList.toggle('active')">
+                    <strong>${letter}.</strong> ${opt.text}
+                    <div class="explanation">${opt.exp}</div>
+                </div>`;
+        });
+    } else {
+        html += `
+            <textarea class="user-answer" placeholder="Nhập câu trả lời của bạn vào đây..."></textarea>
+            <div class="card option" onclick="this.classList.toggle('active')" style="margin-top: 10px; background-color: #202124;">
+                <strong>👁️ Bấm vào đây để xem đáp án gốc</strong>
+                <div class="explanation">${cauHoi.answerKey}</div>
+            </div>`;
+    }
+
+    // Nút Nộp & Chuyển câu tiếp theo
+    html += `<button id="btn-next" style="margin-top: 15px; width: 100%; padding: 14px; font-size: 16px;">Xác nhận nộp & Chuyển câu tiếp theo</button>`;
+
+    container.innerHTML = html;
+
+    // Render công thức Toán/Hóa
+    if (typeof renderMathInElement === "function") {
+        renderMathInElement(container, { delimiters: [{left: "$$", right: "$$", display: false}] });
+    }
+
+    // Sự kiện khi bấm nút Chuyển câu
+    document.getElementById('btn-next').addEventListener('click', () => {
+        currentQuestionIndex++;
+        renderCurrentQuestion(); // Load lại giao diện với câu mới
+    });
 }
