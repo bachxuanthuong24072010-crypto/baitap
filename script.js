@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
 import { getFirestore, collection, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
-// Cấu hình Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyAc1N9X4y3G-qCnp2dt3DCkFpa1Kc7Wctc",
     authDomain: "baitap-e5015.firebaseapp.com",
@@ -14,11 +13,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-let danhSachCauHoi = [];      // Mảng khi tạo câu hỏi
-let quizDataGlobal = [];      // Mảng chứa đề bài khi làm bài
-let currentQuestionIndex = 0; // Theo dõi đang ở câu số mấy
+let danhSachCauHoi = [];
+let quizDataGlobal = [];
+let currentQuestionIndex = 0;
 
-// Kiểm tra URL
 const urlParams = new URLSearchParams(window.location.search);
 const quizId = urlParams.get('id');
 
@@ -29,7 +27,6 @@ if (quizId) {
     document.getElementById('admin-panel').style.display = 'block';
 }
 
-// Ẩn/Hiện nhóm nhập liệu
 const questionType = document.getElementById('question-type');
 if (questionType) {
     questionType.addEventListener('change', function() {
@@ -43,7 +40,6 @@ if (questionType) {
     });
 }
 
-// Nút Thêm câu hỏi
 document.getElementById('btn-add').addEventListener('click', () => {
     const questionText = document.getElementById('question').value.trim();
     const type = document.getElementById('question-type').value;
@@ -54,12 +50,23 @@ document.getElementById('btn-add').addEventListener('click', () => {
     }
 
     if (type === 'trac-nghiem') {
+        // Lấy thông tin xem đang tích chọn A(0) hay B(1) đúng
+        const correctIndex = parseInt(document.querySelector('input[name="correct-answer"]:checked').value);
+        
         danhSachCauHoi.push({
             type: "trac-nghiem",
             question: questionText,
             options: [
-                { text: document.getElementById('opt-a').value, exp: document.getElementById('exp-a').value },
-                { text: document.getElementById('opt-b').value, exp: document.getElementById('exp-b').value }
+                { 
+                    text: document.getElementById('opt-a').value, 
+                    exp: document.getElementById('exp-a').value,
+                    isCorrect: correctIndex === 0 // true nếu chọn A
+                },
+                { 
+                    text: document.getElementById('opt-b').value, 
+                    exp: document.getElementById('exp-b').value,
+                    isCorrect: correctIndex === 1 // true nếu chọn B
+                }
             ]
         });
     } else {
@@ -70,17 +77,18 @@ document.getElementById('btn-add').addEventListener('click', () => {
         });
     }
     
+    // Xóa form
     document.getElementById('question').value = '';
     document.getElementById('opt-a').value = '';
     document.getElementById('exp-a').value = '';
     document.getElementById('opt-b').value = '';
     document.getElementById('exp-b').value = '';
     document.getElementById('answer-key').value = '';
+    document.querySelector('input[name="correct-answer"][value="0"]').checked = true; // Trả về mặc định A đúng
     
     alert(`Đã thêm xong! Đang có ${danhSachCauHoi.length} câu hỏi.`);
 });
 
-// Nút Lưu và tạo Link
 document.getElementById('btn-save').addEventListener('click', async () => {
     const currentQuestion = document.getElementById('question').value.trim();
     if (currentQuestion !== "") {
@@ -107,7 +115,6 @@ document.getElementById('btn-save').addEventListener('click', async () => {
         `;
         alert("Tạo link thành công!");
     } catch (error) {
-        console.error("Lỗi chi tiết:", error);
         alert("Lỗi khi kết nối Firebase: " + error.message);
     } finally {
         saveBtn.innerText = "Lưu và tạo Link";
@@ -115,13 +122,12 @@ document.getElementById('btn-save').addEventListener('click', async () => {
     }
 });
 
-// ---------------- PHẦN MỚI THAY ĐỔI: HIỂN THỊ TỪNG CÂU ----------------
 async function loadQuiz(id) {
     try {
         const docSnap = await getDoc(doc(db, "quizzes", id));
         if (docSnap.exists()) {
             quizDataGlobal = docSnap.data().danhSach;
-            currentQuestionIndex = 0; // Bắt đầu từ câu đầu tiên
+            currentQuestionIndex = 0;
             renderCurrentQuestion();
         } else {
             document.getElementById('quiz-content').innerHTML = "Không tìm thấy đề bài!";
@@ -131,11 +137,9 @@ async function loadQuiz(id) {
     }
 }
 
-// Hàm vẽ đúng 1 câu hỏi lên màn hình
 function renderCurrentQuestion() {
     const container = document.getElementById('quiz-content');
 
-    // Nếu đã làm hết câu hỏi -> Hiện thông báo hoàn thành
     if (currentQuestionIndex >= quizDataGlobal.length) {
         container.innerHTML = `<div class="card" style="text-align: center; border-left: 4px solid #4caf50;">
                                     <h2>🎉 Chúc mừng! Bạn đã hoàn thành bài làm.</h2>
@@ -143,7 +147,6 @@ function renderCurrentQuestion() {
         return;
     }
 
-    // Lấy câu hỏi hiện tại
     const cauHoi = quizDataGlobal[currentQuestionIndex];
     
     let html = `<div class="card" style="margin-top: 20px; border-left: 4px solid #8ab4f8;">
@@ -154,7 +157,7 @@ function renderCurrentQuestion() {
         cauHoi.options.forEach((opt, i) => {
             const letter = String.fromCharCode(65 + i); 
             html += `
-                <div class="card option" onclick="this.classList.toggle('active')">
+                <div class="card option trac-nghiem-opt">
                     <strong>${letter}.</strong> ${opt.text}
                     <div class="explanation">${opt.exp}</div>
                 </div>`;
@@ -168,19 +171,46 @@ function renderCurrentQuestion() {
             </div>`;
     }
 
-    // Nút Nộp & Chuyển câu tiếp theo
     html += `<button id="btn-next" style="margin-top: 15px; width: 100%; padding: 14px; font-size: 16px;">Xác nhận nộp & Chuyển câu tiếp theo</button>`;
-
     container.innerHTML = html;
 
-    // Render công thức Toán/Hóa
     if (typeof renderMathInElement === "function") {
         renderMathInElement(container, { delimiters: [{left: "$$", right: "$$", display: false}] });
     }
 
-    // Sự kiện khi bấm nút Chuyển câu
+    // --- LOGIC CHẤM ĐIỂM TRẮC NGHIỆM TẠI CHỖ ---
+    if (!cauHoi.type || cauHoi.type === 'trac-nghiem') {
+        const optionEls = container.querySelectorAll('.trac-nghiem-opt');
+        let answered = false; 
+        
+        optionEls.forEach((el, i) => {
+            el.addEventListener('click', function() {
+                if (answered) return; // Chọn 1 lần là khóa lại
+                answered = true;
+                
+                this.classList.add('active'); // Mở giải thích
+                
+                if (cauHoi.options[i].isCorrect) {
+                    this.style.borderColor = '#4caf50';
+                    this.innerHTML = "✅ " + this.innerHTML;
+                } else {
+                    this.style.borderColor = '#f44336';
+                    this.innerHTML = "❌ " + this.innerHTML;
+                    // Bôi xanh hiển thị đáp án đúng
+                    optionEls.forEach((optEl, optIndex) => {
+                        if (cauHoi.options[optIndex].isCorrect) {
+                            optEl.style.borderColor = '#4caf50';
+                            optEl.classList.add('active');
+                        }
+                    });
+                }
+            });
+        });
+    }
+
+    // --- LOGIC CHUYỂN CÂU ---
     document.getElementById('btn-next').addEventListener('click', () => {
         currentQuestionIndex++;
-        renderCurrentQuestion(); // Load lại giao diện với câu mới
+        renderCurrentQuestion(); 
     });
 }
