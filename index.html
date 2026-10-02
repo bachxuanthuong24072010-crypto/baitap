@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Câu Hỏi</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Thư viện KaTeX hiển thị công thức -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+    <!-- Khu vực nhập đề (Chỉ hiện khi chưa có link ID) -->
+    <div id="admin-panel" style="display:none;">
+        <h2>Tạo câu hỏi</h2>
+        <textarea id="question" placeholder="Nhập câu hỏi (Bao công thức trong $$, VD: $$2SO_2$$)"></textarea>
+        
+        <input type="text" id="opt-a" placeholder="Nội dung đáp án A">
+        <textarea id="exp-a" placeholder="Giải thích đáp án A (ẩn)"></textarea>
+        
+        <input type="text" id="opt-b" placeholder="Nội dung đáp án B">
+        <textarea id="exp-b" placeholder="Giải thích đáp án B (ẩn)"></textarea>
+        <button id="btn-add">Thêm câu hỏi này</button>
+        <button id="btn-save">Lưu và tạo Link</button>
+        <p id="link-result"></p>
+    </div>
+
+    <!-- Khu vực làm bài (Chỉ hiện khi có link ID) -->
+    <div id="quiz-panel" style="display:none;">
+        <div id="quiz-content"></div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
