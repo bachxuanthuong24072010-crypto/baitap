@@ -4,20 +4,18 @@
     <meta charset="UTF-8">
     <title>Web Câu Hỏi</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Thư viện KaTeX hiển thị công thức -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
-    <!-- Khu vực nhập đề -->
     <div id="admin-panel" style="display:none;">
         <h2>Tạo câu hỏi</h2>
         
         <select id="question-type" style="width:100%; margin-bottom:10px; padding:10px; background:#303134; color:white; border-radius:8px;">
             <option value="trac-nghiem">Trắc nghiệm</option>
-            <option value="tra-loi-ngan">Trả lời ngắn</option>
-            <option value="tu-luan">Tự luận</option>
+            <option value="dung-sai">Đúng / Sai</option>
+            <option value="tu-luan">Tự luận / Trả lời ngắn</option>
         </select>
 
         <textarea id="question" placeholder="Nhập câu hỏi (Bao công thức trong $$, VD: $$2SO_2$$)"></textarea>
@@ -31,7 +29,6 @@
                 <input type="text" id="opt-a" placeholder="Nội dung đáp án A" style="margin-top: 8px;">
                 <textarea id="exp-a" placeholder="Giải thích đáp án A (ẩn)"></textarea>
             </div>
-            
             <div style="background: #202124; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
                 <label style="color: #4caf50; font-weight: bold; cursor: pointer; display: flex; align-items: center;">
                     <input type="radio" name="correct-answer" value="1" style="width: auto; margin: 0 10px 0 0;"> ĐÁP ÁN B ĐÚNG
@@ -39,7 +36,6 @@
                 <input type="text" id="opt-b" placeholder="Nội dung đáp án B" style="margin-top: 8px;">
                 <textarea id="exp-b" placeholder="Giải thích đáp án B (ẩn)"></textarea>
             </div>
-
             <div style="background: #202124; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
                 <label style="color: #4caf50; font-weight: bold; cursor: pointer; display: flex; align-items: center;">
                     <input type="radio" name="correct-answer" value="2" style="width: auto; margin: 0 10px 0 0;"> ĐÁP ÁN C ĐÚNG
@@ -47,13 +43,28 @@
                 <input type="text" id="opt-c" placeholder="Nội dung đáp án C" style="margin-top: 8px;">
                 <textarea id="exp-c" placeholder="Giải thích đáp án C (ẩn)"></textarea>
             </div>
-
             <div style="background: #202124; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
                 <label style="color: #4caf50; font-weight: bold; cursor: pointer; display: flex; align-items: center;">
                     <input type="radio" name="correct-answer" value="3" style="width: auto; margin: 0 10px 0 0;"> ĐÁP ÁN D ĐÚNG
                 </label>
                 <input type="text" id="opt-d" placeholder="Nội dung đáp án D" style="margin-top: 8px;">
                 <textarea id="exp-d" placeholder="Giải thích đáp án D (ẩn)"></textarea>
+            </div>
+        </div>
+
+        <!-- Nhóm Đúng / Sai -->
+        <div id="dung-sai-group" style="display: none;">
+            <div style="background: #202124; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                <label style="color: #4caf50; font-weight: bold; cursor: pointer; display: flex; align-items: center;">
+                    <input type="radio" name="tf-correct" value="0" checked style="width: auto; margin: 0 10px 0 0;"> ĐÚNG
+                </label>
+                <textarea id="exp-tf-true" placeholder="Giải thích (ẩn)"></textarea>
+            </div>
+            <div style="background: #202124; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                <label style="color: #f44336; font-weight: bold; cursor: pointer; display: flex; align-items: center;">
+                    <input type="radio" name="tf-correct" value="1" style="width: auto; margin: 0 10px 0 0;"> SAI
+                </label>
+                <textarea id="exp-tf-false" placeholder="Giải thích (ẩn)"></textarea>
             </div>
         </div>
 
