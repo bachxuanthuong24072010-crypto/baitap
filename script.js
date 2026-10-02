@@ -50,23 +50,16 @@ document.getElementById('btn-add').addEventListener('click', () => {
     }
 
     if (type === 'trac-nghiem') {
-        // Lấy thông tin xem đang tích chọn A(0) hay B(1) đúng
         const correctIndex = parseInt(document.querySelector('input[name="correct-answer"]:checked').value);
         
         danhSachCauHoi.push({
             type: "trac-nghiem",
             question: questionText,
             options: [
-                { 
-                    text: document.getElementById('opt-a').value, 
-                    exp: document.getElementById('exp-a').value,
-                    isCorrect: correctIndex === 0 // true nếu chọn A
-                },
-                { 
-                    text: document.getElementById('opt-b').value, 
-                    exp: document.getElementById('exp-b').value,
-                    isCorrect: correctIndex === 1 // true nếu chọn B
-                }
+                { text: document.getElementById('opt-a').value, exp: document.getElementById('exp-a').value, isCorrect: correctIndex === 0 },
+                { text: document.getElementById('opt-b').value, exp: document.getElementById('exp-b').value, isCorrect: correctIndex === 1 },
+                { text: document.getElementById('opt-c').value, exp: document.getElementById('exp-c').value, isCorrect: correctIndex === 2 },
+                { text: document.getElementById('opt-d').value, exp: document.getElementById('exp-d').value, isCorrect: correctIndex === 3 }
             ]
         });
     } else {
@@ -77,14 +70,14 @@ document.getElementById('btn-add').addEventListener('click', () => {
         });
     }
     
-    // Xóa form
+    // Xóa trắng form
     document.getElementById('question').value = '';
-    document.getElementById('opt-a').value = '';
-    document.getElementById('exp-a').value = '';
-    document.getElementById('opt-b').value = '';
-    document.getElementById('exp-b').value = '';
-    document.getElementById('answer-key').value = '';
-    document.querySelector('input[name="correct-answer"][value="0"]').checked = true; // Trả về mặc định A đúng
+    ['a', 'b', 'c', 'd'].forEach(id => {
+        if(document.getElementById(`opt-${id}`)) document.getElementById(`opt-${id}`).value = '';
+        if(document.getElementById(`exp-${id}`)) document.getElementById(`exp-${id}`).value = '';
+    });
+    if(document.getElementById('answer-key')) document.getElementById('answer-key').value = '';
+    if(document.querySelector('input[name="correct-answer"][value="0"]')) document.querySelector('input[name="correct-answer"][value="0"]').checked = true;
     
     alert(`Đã thêm xong! Đang có ${danhSachCauHoi.length} câu hỏi.`);
 });
@@ -185,10 +178,10 @@ function renderCurrentQuestion() {
         
         optionEls.forEach((el, i) => {
             el.addEventListener('click', function() {
-                if (answered) return; // Chọn 1 lần là khóa lại
+                if (answered) return; 
                 answered = true;
                 
-                this.classList.add('active'); // Mở giải thích
+                this.classList.add('active'); 
                 
                 if (cauHoi.options[i].isCorrect) {
                     this.style.borderColor = '#4caf50';
@@ -196,7 +189,7 @@ function renderCurrentQuestion() {
                 } else {
                     this.style.borderColor = '#f44336';
                     this.innerHTML = "❌ " + this.innerHTML;
-                    // Bôi xanh hiển thị đáp án đúng
+                    
                     optionEls.forEach((optEl, optIndex) => {
                         if (cauHoi.options[optIndex].isCorrect) {
                             optEl.style.borderColor = '#4caf50';
