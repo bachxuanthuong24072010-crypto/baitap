@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
 import { getFirestore, collection, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
-// Cấu hình đầy đủ Firebase của em
+// Cấu hình Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyAc1N9X4y3G-qCnp2dt3DCkFpa1Kc7Wctc",
     authDomain: "baitap-e5015.firebaseapp.com",
@@ -16,7 +16,7 @@ const db = getFirestore(app);
 
 let danhSachCauHoi = [];
 
-// Kiểm tra URL xem là người tạo hay người làm bài
+// Kiểm tra URL
 const urlParams = new URLSearchParams(window.location.search);
 const quizId = urlParams.get('id');
 
@@ -27,7 +27,7 @@ if (quizId) {
     document.getElementById('admin-panel').style.display = 'block';
 }
 
-// Ẩn/Hiện nhóm nhập liệu theo loại câu hỏi
+// Ẩn/Hiện nhóm nhập liệu
 const questionType = document.getElementById('question-type');
 if (questionType) {
     questionType.addEventListener('change', function() {
@@ -41,7 +41,7 @@ if (questionType) {
     });
 }
 
-// Xử lý nút Thêm câu hỏi
+// Nút Thêm câu hỏi
 document.getElementById('btn-add').addEventListener('click', () => {
     const questionText = document.getElementById('question').value.trim();
     const type = document.getElementById('question-type').value;
@@ -68,7 +68,6 @@ document.getElementById('btn-add').addEventListener('click', () => {
         });
     }
     
-    // Xóa trắng ô nhập
     document.getElementById('question').value = '';
     document.getElementById('opt-a').value = '';
     document.getElementById('exp-a').value = '';
@@ -79,7 +78,7 @@ document.getElementById('btn-add').addEventListener('click', () => {
     alert(`Đã thêm xong! Đang có ${danhSachCauHoi.length} câu hỏi.`);
 });
 
-// Xử lý nút Lưu và tạo Link (kèm bẫy lỗi chi tiết)
+// Nút Lưu và tạo Link
 document.getElementById('btn-save').addEventListener('click', async () => {
     const currentQuestion = document.getElementById('question').value.trim();
     if (currentQuestion !== "") {
@@ -114,7 +113,7 @@ document.getElementById('btn-save').addEventListener('click', async () => {
     }
 });
 
-// Hàm tải dữ liệu bài làm khi truy cập bằng link
+// Hàm hiển thị bài làm và Xử lý nút Nộp bài
 async function loadQuiz(id) {
     try {
         const docSnap = await getDoc(doc(db, "quizzes", id));
@@ -138,17 +137,28 @@ async function loadQuiz(id) {
                     });
                 } else {
                     html += `
-                        <textarea placeholder="Nhập câu trả lời của bạn vào đây..."></textarea>
+                        <textarea class="user-answer" placeholder="Nhập câu trả lời của bạn vào đây..."></textarea>
                         <div class="card option" onclick="this.classList.toggle('active')" style="margin-top: 10px; background-color: #202124;">
-                            <strong>👁️️ Bấm vào đây để xem đáp án gốc</strong>
+                            <strong>👁️ Bấm vào đây để xem đáp án gốc</strong>
                             <div class="explanation">${cauHoi.answerKey}</div>
                         </div>`;
                 }
             });
             
+            // Nút Nộp bài ở cuối
+            html += `<button id="btn-submit" style="margin-top: 25px; margin-bottom: 50px; width: 100%; padding: 14px; font-size: 16px;">Nộp bài</button>`;
+
             const container = document.getElementById('quiz-content');
             container.innerHTML = html;
             
+            // Sự kiện bấm Nộp bài
+            document.getElementById('btn-submit').addEventListener('click', () => {
+                document.querySelectorAll('.user-answer').forEach(el => el.disabled = true);
+                document.getElementById('btn-submit').innerText = "Đã nộp bài!";
+                document.getElementById('btn-submit').disabled = true;
+                alert("Bạn đã hoàn thành và nộp bài thành công!");
+            });
+
             if (typeof renderMathInElement === "function") {
                 renderMathInElement(container, { delimiters: [{left: "$$", right: "$$", display: false}] });
             }
