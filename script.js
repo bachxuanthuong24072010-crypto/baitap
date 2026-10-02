@@ -13,11 +13,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Gắn mảng vào window để HTML có thể gọi lệnh onchange chỉnh sửa trực tiếp
 window.danhSachCauHoi = [];
 let quizDataGlobal = [];
 let currentQuestionIndex = 0;
-let score = 0; 
+let score = 0;
 
 const urlParams = new URLSearchParams(window.location.search);
 const quizId = urlParams.get('id');
@@ -42,9 +41,10 @@ if (questionType) {
     });
 }
 
-// Xử lý thêm câu hỏi thủ công
+// Bấm thêm câu hỏi
 document.getElementById('btn-add').addEventListener('click', () => {
     const questionText = document.getElementById('question').value.trim();
+    const imgUrl = document.getElementById('question-img').value.trim();
     const type = document.getElementById('question-type').value;
 
     if (!questionText) {
@@ -57,6 +57,7 @@ document.getElementById('btn-add').addEventListener('click', () => {
         window.danhSachCauHoi.push({
             type: "trac-nghiem",
             question: questionText,
+            imageUrl: imgUrl,
             options: [
                 { text: document.getElementById('opt-a').value, exp: document.getElementById('exp-a').value, isCorrect: correctIndex === 0 },
                 { text: document.getElementById('opt-b').value, exp: document.getElementById('exp-b').value, isCorrect: correctIndex === 1 },
@@ -69,6 +70,7 @@ document.getElementById('btn-add').addEventListener('click', () => {
         window.danhSachCauHoi.push({
             type: "trac-nghiem",
             question: questionText,
+            imageUrl: imgUrl,
             options: [
                 { text: "ĐÚNG", exp: document.getElementById('exp-tf-true').value, isCorrect: tfCorrectIndex === 0 },
                 { text: "SAI", exp: document.getElementById('exp-tf-false').value, isCorrect: tfCorrectIndex === 1 }
@@ -78,71 +80,45 @@ document.getElementById('btn-add').addEventListener('click', () => {
         window.danhSachCauHoi.push({
             type: type,
             question: questionText,
+            imageUrl: imgUrl,
             answerKey: document.getElementById('answer-key').value
         });
     }
     
+    // Reset form
     document.getElementById('question').value = '';
+    document.getElementById('question-img').value = '';
     ['a', 'b', 'c', 'd'].forEach(id => {
         if(document.getElementById(`opt-${id}`)) document.getElementById(`opt-${id}`).value = '';
         if(document.getElementById(`exp-${id}`)) document.getElementById(`exp-${id}`).value = '';
     });
-    renderPreview(); // Cập nhật lại khung xem trước
-    alert(`Đã thêm! Hiện có ${window.danhSachCauHoi.length} câu.`);
+
+    renderPreview(); // Gọi hàm hiển thị các câu vừa thêm để soát lỗi
 });
 
-// Xử lý Bóc tách & Xem trước
-document.getElementById('btn-preview').addEventListener('click', () => {
-    const textRaw = document.getElementById('bulk-input').value;
-    if(!textRaw.trim()) return alert("Vui lòng dán đề vào ô trống!");
-
-    const blocks = textRaw.split(/Câu\s+\d+[:.]/i).filter(b => b.trim() !== "");
-    
-    blocks.forEach(block => {
-        const lines = block.split('\n').map(l => l.trim()).filter(l => l !== "");
-        if (lines.length === 0) return;
-
-        let question = lines[0];
-        let options = [];
-        let exp = "";
-
-        lines.slice(1).forEach(line => {
-            if (line.startsWith("HD:") || line.startsWith("Giải thích:")) {
-                exp = line.replace(/^(HD:|Giải thích:)\s*/i, "").trim();
-            } else if (line.match(/^[\*]?[A-D][\.\)]/i)) {
-                let isCorrect = line.startsWith("*");
-                let text = line.replace(/^[\*]?[A-D][\.\)]\s*/i, "").trim();
-                options.push({ text: text, isCorrect: isCorrect, exp: "" });
-            }
-        });
-
-        options.forEach(opt => { if (opt.isCorrect) opt.exp = exp; });
-        window.danhSachCauHoi.push({ type: "trac-nghiem", question: question, options: options });
-    });
-
-    document.getElementById('bulk-input').value = ""; // Xóa sau khi bóc
-    renderPreview();
-});
-
-// Hiển thị khung xem trước để rà soát lỗi
+// Hàm hiển thị danh sách các câu đã thêm để sửa trực tiếp
 function renderPreview() {
-    let html = `<strong>Tổng số câu đang có: ${window.danhSachCauHoi.length}</strong>`;
+    let html = `<h3>Danh sách đã thêm (${window.danhSachCauHoi.length} câu - Có thể sửa trực tiếp):</h3>`;
     window.danhSachCauHoi.forEach((cau, i) => {
-        if(cau.type === "trac-nghiem") {
-            html += `<div style="border-left: 3px solid #8ab4f8; background: #202124; padding: 15px; margin-top: 15px; border-radius: 8px;">
+        html += `<div style="border-left: 4px solid #8ab4f8; background: #202124; padding: 15px; margin-top: 15px; border-radius: 8px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                         <strong style="color:#8ab4f8">Câu ${i + 1}:</strong>
-                        <textarea onchange="window.danhSachCauHoi[${i}].question = this.value" style="margin-top: 8px;">${cau.question}</textarea>`;
-            
+                        <button onclick="window.danhSachCauHoi.splice(${i}, 1); renderPreview();" style="width:auto; padding:4px 8px; background:#f44336; color:white; font-size:12px; margin:0;">Xóa câu này</button>
+                    </div>
+                    <textarea onchange="window.danhSachCauHoi[${i}].question = this.value">${cau.question}</textarea>
+                    <input type="text" value="${cau.imageUrl || ''}" placeholder="Link ảnh..." onchange="window.danhSachCauHoi[${i}].imageUrl = this.value">`;
+
+        if (cau.type === "trac-nghiem") {
             cau.options.forEach((opt, j) => {
                 let checked = opt.isCorrect ? "checked" : "";
                 html += `<div style="display:flex; align-items:center; margin-bottom:5px;">
-                            <input type="radio" name="correct-${i}" ${checked} style="width:auto; margin-right:10px;" 
+                            <input type="radio" name="edit-correct-${i}" ${checked} style="width:auto; margin-right:10px;" 
                                 onchange="window.danhSachCauHoi[${i}].options.forEach(o => o.isCorrect = false); window.danhSachCauHoi[${i}].options[${j}].isCorrect = true;">
                             <input type="text" value="${opt.text}" style="margin:0;" onchange="window.danhSachCauHoi[${i}].options[${j}].text = this.value">
                         </div>`;
             });
-            html += `</div>`;
         }
+        html += `</div>`;
     });
     
     document.getElementById('preview-area').innerHTML = html;
@@ -151,6 +127,7 @@ function renderPreview() {
         renderMathInElement(document.getElementById('preview-area'), { delimiters: [{left: "$$", right: "$$", display: false}] });
     }
 }
+window.renderPreview = renderPreview;
 
 // Lưu lên Firebase
 document.getElementById('btn-save').addEventListener('click', async () => {
@@ -163,23 +140,23 @@ document.getElementById('btn-save').addEventListener('click', async () => {
     try {
         const docRef = await addDoc(collection(db, "quizzes"), { danhSach: window.danhSachCauHoi });
         const link = `${window.location.origin + window.location.pathname}?id=${docRef.id}`;
-        document.getElementById('link-result').innerHTML = `<b>Link bài tập của bạn:</b><br><a href="${link}" style="color:#8ab4f8; word-break: break-all; font-size: 18px;" target="_blank">${link}</a>`;
+        document.getElementById('link-result').innerHTML = `<b>Link bài tập:</b><br><a href="${link}" style="color:#8ab4f8; word-break: break-all;" target="_blank">${link}</a>`;
     } catch (error) {
         alert("Lỗi kết nối Firebase: " + error.message);
     } finally {
-        saveBtn.innerText = "LƯU TOÀN BỘ & TẠO LINK";
+        saveBtn.innerText = "Lưu và tạo Link";
         saveBtn.disabled = false;
     }
 });
 
-// Tải đề cho học sinh làm
+// Tải đề làm bài
 async function loadQuiz(id) {
     try {
         const docSnap = await getDoc(doc(db, "quizzes", id));
         if (docSnap.exists()) {
             quizDataGlobal = docSnap.data().danhSach;
             currentQuestionIndex = 0;
-            score = 0; 
+            score = 0;
             renderCurrentQuestion();
         } else {
             document.getElementById('quiz-content').innerHTML = "Không tìm thấy đề bài!";
@@ -189,7 +166,7 @@ async function loadQuiz(id) {
     }
 }
 
-// Hiển thị câu hỏi cho học sinh
+// Hiển thị cho học sinh làm
 function renderCurrentQuestion() {
     const container = document.getElementById('quiz-content');
 
@@ -202,8 +179,11 @@ function renderCurrentQuestion() {
     }
 
     const cauHoi = quizDataGlobal[currentQuestionIndex];
+    let imgHtml = cauHoi.imageUrl ? `<img src="${cauHoi.imageUrl}" style="max-width:100%; border-radius:8px; margin-top:10px; display:block;">` : '';
+
     let html = `<div class="card" style="margin-top: 20px; border-left: 4px solid #8ab4f8;">
                     <strong>Câu ${currentQuestionIndex + 1} / ${quizDataGlobal.length}:</strong> ${cauHoi.question}
+                    ${imgHtml}
                 </div>`;
     
     if (cauHoi.type === 'trac-nghiem') {
@@ -220,7 +200,7 @@ function renderCurrentQuestion() {
         html += `
             <textarea class="user-answer" placeholder="Nhập câu trả lời..."></textarea>
             <div class="card option" onclick="this.classList.toggle('active')" style="margin-top: 10px; background-color: #202124;">
-                <strong>👁️ Bấm xem đáp án gốc</strong>
+                <strong>👁️️ Bấm xem đáp án gốc</strong>
                 <div class="explanation">${cauHoi.answerKey}</div>
             </div>`;
     }
@@ -245,7 +225,7 @@ function renderCurrentQuestion() {
                 if (cauHoi.options[i].isCorrect) {
                     this.style.borderColor = '#4caf50';
                     this.innerHTML = "✅ " + this.innerHTML;
-                    score++; 
+                    score++;
                 } else {
                     this.style.borderColor = '#f44336';
                     this.innerHTML = "❌ " + this.innerHTML;
