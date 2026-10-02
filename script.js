@@ -1,17 +1,22 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
 import { getFirestore, collection, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
-// Cấu hình Firebase
+// Cấu hình đầy đủ Firebase của em
 const firebaseConfig = {
     apiKey: "AIzaSyAc1N9X4y3G-qCnp2dt3DCkFpa1Kc7Wctc",
-    projectId: "baitap-e5015"
+    authDomain: "baitap-e5015.firebaseapp.com",
+    projectId: "baitap-e5015",
+    storageBucket: "baitap-e5015.firebasestorage.app",
+    messagingSenderId: "64640568211",
+    appId: "1:64640568211:web:4b4946825298603779b666"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-let danhSachCauHoi = []; // Mảng chứa các câu hỏi
+let danhSachCauHoi = [];
 
-// Kiểm tra URL
+// Kiểm tra URL xem là người tạo hay người làm bài
 const urlParams = new URLSearchParams(window.location.search);
 const quizId = urlParams.get('id');
 
@@ -22,7 +27,7 @@ if (quizId) {
     document.getElementById('admin-panel').style.display = 'block';
 }
 
-// ---------------- PHẦN MỚI THÊM: Ẩn/Hiện nhóm nhập liệu ----------------
+// Ẩn/Hiện nhóm nhập liệu theo loại câu hỏi
 const questionType = document.getElementById('question-type');
 if (questionType) {
     questionType.addEventListener('change', function() {
@@ -35,19 +40,17 @@ if (questionType) {
         }
     });
 }
-// ------------------------------------------------------------------------
 
 // Xử lý nút Thêm câu hỏi
 document.getElementById('btn-add').addEventListener('click', () => {
-    const questionText = document.getElementById('question').value;
-    const type = document.getElementById('question-type').value; // Lấy loại câu hỏi
+    const questionText = document.getElementById('question').value.trim();
+    const type = document.getElementById('question-type').value;
 
     if (!questionText) {
         alert("Vui lòng nhập câu hỏi!");
         return;
     }
 
-    // Phân loại khi lưu dữ liệu
     if (type === 'trac-nghiem') {
         danhSachCauHoi.push({
             type: "trac-nghiem",
@@ -59,7 +62,7 @@ document.getElementById('btn-add').addEventListener('click', () => {
         });
     } else {
         danhSachCauHoi.push({
-            type: type, // "tra-loi-ngan" hoặc "tu-luan"
+            type: type,
             question: questionText,
             answerKey: document.getElementById('answer-key').value
         });
@@ -73,68 +76,86 @@ document.getElementById('btn-add').addEventListener('click', () => {
     document.getElementById('exp-b').value = '';
     document.getElementById('answer-key').value = '';
     
-    alert(`Đã lưu tạm câu ${danhSachCauHoi.length}. Hãy nhập đề câu tiếp theo!`);
+    alert(`Đã thêm xong! Đang có ${danhSachCauHoi.length} câu hỏi.`);
 });
 
-// Xử lý nút Lưu và tạo Link
+// Xử lý nút Lưu và tạo Link (kèm bẫy lỗi chi tiết)
 document.getElementById('btn-save').addEventListener('click', async () => {
-    if (document.getElementById('question').value.trim() !== "") {
+    const currentQuestion = document.getElementById('question').value.trim();
+    if (currentQuestion !== "") {
         document.getElementById('btn-add').click();
     }
 
     if (danhSachCauHoi.length === 0) {
-        alert("Chưa có câu hỏi nào!");
+        alert("Chưa có câu hỏi nào để tạo link!");
         return;
     }
 
-    const docRef = await addDoc(collection(db, "quizzes"), { danhSach: danhSachCauHoi });
-    
-    const baseUrl = window.location.origin + window.location.pathname;
-    const link = `${baseUrl}?id=${docRef.id}`;
-    document.getElementById('link-result').innerHTML = `Link của bạn: <a href="${link}" style="color:#8ab4f8" target="_blank">${link}</a>`;
+    const saveBtn = document.getElementById('btn-save');
+    saveBtn.innerText = "Đang tạo link...";
+    saveBtn.disabled = true;
+
+    try {
+        const docRef = await addDoc(collection(db, "quizzes"), { danhSach: danhSachCauHoi });
+        const baseUrl = window.location.origin + window.location.pathname;
+        const link = `${baseUrl}?id=${docRef.id}`;
+        
+        document.getElementById('link-result').innerHTML = `
+            <b>Link bài tập của bạn:</b><br>
+            <a href="${link}" style="color:#8ab4f8; word-break: break-all;" target="_blank">${link}</a>
+        `;
+        alert("Tạo link thành công!");
+    } catch (error) {
+        console.error("Lỗi chi tiết:", error);
+        alert("Lỗi khi kết nối Firebase: " + error.message);
+    } finally {
+        saveBtn.innerText = "Lưu và tạo Link";
+        saveBtn.disabled = false;
+    }
 });
 
-// Hàm tải dữ liệu khi có người truy cập link
+// Hàm tải dữ liệu bài làm khi truy cập bằng link
 async function loadQuiz(id) {
-    const docSnap = await getDoc(doc(db, "quizzes", id));
-    if (docSnap.exists()) {
-        const data = docSnap.data();
-        let html = '';
-        
-        data.danhSach.forEach((cauHoi, index) => {
-            html += `<div class="card" style="margin-top: 20px; border-left: 4px solid #8ab4f8;">
-                        <strong>Câu ${index + 1}:</strong> ${cauHoi.question}
-                     </div>`;
+    try {
+        const docSnap = await getDoc(doc(db, "quizzes", id));
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            let html = '';
             
-            // Phân loại khi hiển thị ra cho người làm bài
-            if (!cauHoi.type || cauHoi.type === 'trac-nghiem') {
-                // Render trắc nghiệm
-                cauHoi.options.forEach((opt, i) => {
-                    const letter = String.fromCharCode(65 + i); 
+            data.danhSach.forEach((cauHoi, index) => {
+                html += `<div class="card" style="margin-top: 20px; border-left: 4px solid #8ab4f8;">
+                            <strong>Câu ${index + 1}:</strong> ${cauHoi.question}
+                         </div>`;
+                
+                if (!cauHoi.type || cauHoi.type === 'trac-nghiem') {
+                    cauHoi.options.forEach((opt, i) => {
+                        const letter = String.fromCharCode(65 + i); 
+                        html += `
+                            <div class="card option" onclick="this.classList.toggle('active')">
+                                <strong>${letter}.</strong> ${opt.text}
+                                <div class="explanation">${opt.exp}</div>
+                            </div>`;
+                    });
+                } else {
                     html += `
-                        <div class="card option" onclick="this.classList.toggle('active')">
-                            <strong>${letter}.</strong> ${opt.text}
-                            <div class="explanation">${opt.exp}</div>
+                        <textarea placeholder="Nhập câu trả lời của bạn vào đây..."></textarea>
+                        <div class="card option" onclick="this.classList.toggle('active')" style="margin-top: 10px; background-color: #202124;">
+                            <strong>👁️️ Bấm vào đây để xem đáp án gốc</strong>
+                            <div class="explanation">${cauHoi.answerKey}</div>
                         </div>`;
-                });
-            } else {
-                // Render ô tự luận / trả lời ngắn + Nút xem đáp án
-                html += `
-                    <textarea placeholder="Nhập câu trả lời của bạn vào đây..."></textarea>
-                    <div class="card option" onclick="this.classList.toggle('active')" style="margin-top: 10px; background-color: #202124;">
-                        <strong>👁️ Bấm vào đây để xem đáp án gốc</strong>
-                        <div class="explanation">${cauHoi.answerKey}</div>
-                    </div>`;
+                }
+            });
+            
+            const container = document.getElementById('quiz-content');
+            container.innerHTML = html;
+            
+            if (typeof renderMathInElement === "function") {
+                renderMathInElement(container, { delimiters: [{left: "$$", right: "$$", display: false}] });
             }
-        });
-        
-        const container = document.getElementById('quiz-content');
-        container.innerHTML = html;
-        
-        if (typeof renderMathInElement === "function") {
-            renderMathInElement(container, { delimiters: [{left: "$$", right: "$$", display: false}] });
+        } else {
+            document.getElementById('quiz-content').innerHTML = "Không tìm thấy đề bài!";
         }
-    } else {
-        document.getElementById('quiz-content').innerHTML = "Không tìm thấy đề bài!";
+    } catch (err) {
+        document.getElementById('quiz-content').innerHTML = "Lỗi tải đề: " + err.message;
     }
 }
