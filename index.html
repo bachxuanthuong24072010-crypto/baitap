@@ -10,11 +10,10 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
-    <!-- Khu vực nhập đề (Chỉ hiện khi chưa có link ID) -->
+    <!-- Khu vực nhập đề -->
     <div id="admin-panel" style="display:none;">
         <h2>Tạo câu hỏi</h2>
         
-        <!-- Chọn loại câu hỏi -->
         <select id="question-type" style="width:100%; margin-bottom:10px; padding:10px; background:#303134; color:white; border-radius:8px;">
             <option value="trac-nghiem">Trắc nghiệm</option>
             <option value="tra-loi-ngan">Trả lời ngắn</option>
@@ -23,22 +22,38 @@
 
         <textarea id="question" placeholder="Nhập câu hỏi (Bao công thức trong $$, VD: $$2SO_2$$)"></textarea>
         
-        <!-- Nhóm Trắc nghiệm (Đã thêm nút chọn đúng/sai) -->
+        <!-- Nhóm Trắc nghiệm 4 đáp án -->
         <div id="trac-nghiem-group">
             <div style="background: #202124; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-                <label style="color: #4caf50; font-weight: bold; cursor: pointer;">
-                    <input type="radio" name="correct-answer" value="0" checked> ĐÁP ÁN A ĐÚNG
+                <label style="color: #4caf50; font-weight: bold; cursor: pointer; display: flex; align-items: center;">
+                    <input type="radio" name="correct-answer" value="0" checked style="width: auto; margin: 0 10px 0 0;"> ĐÁP ÁN A ĐÚNG
                 </label>
                 <input type="text" id="opt-a" placeholder="Nội dung đáp án A" style="margin-top: 8px;">
                 <textarea id="exp-a" placeholder="Giải thích đáp án A (ẩn)"></textarea>
             </div>
             
             <div style="background: #202124; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-                <label style="color: #4caf50; font-weight: bold; cursor: pointer;">
-                    <input type="radio" name="correct-answer" value="1"> ĐÁP ÁN B ĐÚNG
+                <label style="color: #4caf50; font-weight: bold; cursor: pointer; display: flex; align-items: center;">
+                    <input type="radio" name="correct-answer" value="1" style="width: auto; margin: 0 10px 0 0;"> ĐÁP ÁN B ĐÚNG
                 </label>
                 <input type="text" id="opt-b" placeholder="Nội dung đáp án B" style="margin-top: 8px;">
                 <textarea id="exp-b" placeholder="Giải thích đáp án B (ẩn)"></textarea>
+            </div>
+
+            <div style="background: #202124; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                <label style="color: #4caf50; font-weight: bold; cursor: pointer; display: flex; align-items: center;">
+                    <input type="radio" name="correct-answer" value="2" style="width: auto; margin: 0 10px 0 0;"> ĐÁP ÁN C ĐÚNG
+                </label>
+                <input type="text" id="opt-c" placeholder="Nội dung đáp án C" style="margin-top: 8px;">
+                <textarea id="exp-c" placeholder="Giải thích đáp án C (ẩn)"></textarea>
+            </div>
+
+            <div style="background: #202124; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                <label style="color: #4caf50; font-weight: bold; cursor: pointer; display: flex; align-items: center;">
+                    <input type="radio" name="correct-answer" value="3" style="width: auto; margin: 0 10px 0 0;"> ĐÁP ÁN D ĐÚNG
+                </label>
+                <input type="text" id="opt-d" placeholder="Nội dung đáp án D" style="margin-top: 8px;">
+                <textarea id="exp-d" placeholder="Giải thích đáp án D (ẩn)"></textarea>
             </div>
         </div>
 
@@ -52,7 +67,7 @@
         <p id="link-result"></p>
     </div>
 
-    <!-- Khu vực làm bài (Chỉ hiện khi có link ID) -->
+    <!-- Khu vực làm bài -->
     <div id="quiz-panel" style="display:none;">
         <div id="quiz-content"></div>
     </div>
