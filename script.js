@@ -13,10 +13,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-let danhSachCauHoi = [];
+// Gắn mảng vào window để HTML có thể gọi lệnh onchange chỉnh sửa trực tiếp
+window.danhSachCauHoi = [];
 let quizDataGlobal = [];
 let currentQuestionIndex = 0;
-let score = 0; // Biến tính số câu đúng
+let score = 0; 
 
 const urlParams = new URLSearchParams(window.location.search);
 const quizId = urlParams.get('id');
@@ -41,6 +42,7 @@ if (questionType) {
     });
 }
 
+// Xử lý thêm câu hỏi thủ công
 document.getElementById('btn-add').addEventListener('click', () => {
     const questionText = document.getElementById('question').value.trim();
     const type = document.getElementById('question-type').value;
@@ -52,7 +54,7 @@ document.getElementById('btn-add').addEventListener('click', () => {
 
     if (type === 'trac-nghiem') {
         const correctIndex = parseInt(document.querySelector('input[name="correct-answer"]:checked').value);
-        danhSachCauHoi.push({
+        window.danhSachCauHoi.push({
             type: "trac-nghiem",
             question: questionText,
             options: [
@@ -63,9 +65,8 @@ document.getElementById('btn-add').addEventListener('click', () => {
             ]
         });
     } else if (type === 'dung-sai') {
-        // Gộp dạng Đúng/Sai thành mảng 2 lựa chọn để chấm tự động
         const tfCorrectIndex = parseInt(document.querySelector('input[name="tf-correct"]:checked').value);
-        danhSachCauHoi.push({
+        window.danhSachCauHoi.push({
             type: "trac-nghiem",
             question: questionText,
             options: [
@@ -74,54 +75,111 @@ document.getElementById('btn-add').addEventListener('click', () => {
             ]
         });
     } else {
-        danhSachCauHoi.push({
+        window.danhSachCauHoi.push({
             type: type,
             question: questionText,
             answerKey: document.getElementById('answer-key').value
         });
     }
     
-    // Xóa form
     document.getElementById('question').value = '';
     ['a', 'b', 'c', 'd'].forEach(id => {
         if(document.getElementById(`opt-${id}`)) document.getElementById(`opt-${id}`).value = '';
         if(document.getElementById(`exp-${id}`)) document.getElementById(`exp-${id}`).value = '';
     });
-    ['true', 'false'].forEach(id => {
-        if(document.getElementById(`exp-tf-${id}`)) document.getElementById(`exp-tf-${id}`).value = '';
-    });
-    if(document.getElementById('answer-key')) document.getElementById('answer-key').value = '';
-    
-    alert(`Đã thêm xong! Đang có ${danhSachCauHoi.length} câu hỏi.`);
+    renderPreview(); // Cập nhật lại khung xem trước
+    alert(`Đã thêm! Hiện có ${window.danhSachCauHoi.length} câu.`);
 });
 
+// Xử lý Bóc tách & Xem trước
+document.getElementById('btn-preview').addEventListener('click', () => {
+    const textRaw = document.getElementById('bulk-input').value;
+    if(!textRaw.trim()) return alert("Vui lòng dán đề vào ô trống!");
+
+    const blocks = textRaw.split(/Câu\s+\d+[:.]/i).filter(b => b.trim() !== "");
+    
+    blocks.forEach(block => {
+        const lines = block.split('\n').map(l => l.trim()).filter(l => l !== "");
+        if (lines.length === 0) return;
+
+        let question = lines[0];
+        let options = [];
+        let exp = "";
+
+        lines.slice(1).forEach(line => {
+            if (line.startsWith("HD:") || line.startsWith("Giải thích:")) {
+                exp = line.replace(/^(HD:|Giải thích:)\s*/i, "").trim();
+            } else if (line.match(/^[\*]?[A-D][\.\)]/i)) {
+                let isCorrect = line.startsWith("*");
+                let text = line.replace(/^[\*]?[A-D][\.\)]\s*/i, "").trim();
+                options.push({ text: text, isCorrect: isCorrect, exp: "" });
+            }
+        });
+
+        options.forEach(opt => { if (opt.isCorrect) opt.exp = exp; });
+        window.danhSachCauHoi.push({ type: "trac-nghiem", question: question, options: options });
+    });
+
+    document.getElementById('bulk-input').value = ""; // Xóa sau khi bóc
+    renderPreview();
+});
+
+// Hiển thị khung xem trước để rà soát lỗi
+function renderPreview() {
+    let html = `<strong>Tổng số câu đang có: ${window.danhSachCauHoi.length}</strong>`;
+    window.danhSachCauHoi.forEach((cau, i) => {
+        if(cau.type === "trac-nghiem") {
+            html += `<div style="border-left: 3px solid #8ab4f8; background: #202124; padding: 15px; margin-top: 15px; border-radius: 8px;">
+                        <strong style="color:#8ab4f8">Câu ${i + 1}:</strong>
+                        <textarea onchange="window.danhSachCauHoi[${i}].question = this.value" style="margin-top: 8px;">${cau.question}</textarea>`;
+            
+            cau.options.forEach((opt, j) => {
+                let checked = opt.isCorrect ? "checked" : "";
+                html += `<div style="display:flex; align-items:center; margin-bottom:5px;">
+                            <input type="radio" name="correct-${i}" ${checked} style="width:auto; margin-right:10px;" 
+                                onchange="window.danhSachCauHoi[${i}].options.forEach(o => o.isCorrect = false); window.danhSachCauHoi[${i}].options[${j}].isCorrect = true;">
+                            <input type="text" value="${opt.text}" style="margin:0;" onchange="window.danhSachCauHoi[${i}].options[${j}].text = this.value">
+                        </div>`;
+            });
+            html += `</div>`;
+        }
+    });
+    
+    document.getElementById('preview-area').innerHTML = html;
+    
+    if (typeof renderMathInElement === "function") {
+        renderMathInElement(document.getElementById('preview-area'), { delimiters: [{left: "$$", right: "$$", display: false}] });
+    }
+}
+
+// Lưu lên Firebase
 document.getElementById('btn-save').addEventListener('click', async () => {
-    if (document.getElementById('question').value.trim() !== "") document.getElementById('btn-add').click();
-    if (danhSachCauHoi.length === 0) return alert("Chưa có câu hỏi nào để tạo link!");
+    if (window.danhSachCauHoi.length === 0) return alert("Chưa có câu hỏi nào để tạo link!");
 
     const saveBtn = document.getElementById('btn-save');
     saveBtn.innerText = "Đang tạo link...";
     saveBtn.disabled = true;
 
     try {
-        const docRef = await addDoc(collection(db, "quizzes"), { danhSach: danhSachCauHoi });
+        const docRef = await addDoc(collection(db, "quizzes"), { danhSach: window.danhSachCauHoi });
         const link = `${window.location.origin + window.location.pathname}?id=${docRef.id}`;
-        document.getElementById('link-result').innerHTML = `<b>Link bài tập:</b><br><a href="${link}" style="color:#8ab4f8; word-break: break-all;" target="_blank">${link}</a>`;
+        document.getElementById('link-result').innerHTML = `<b>Link bài tập của bạn:</b><br><a href="${link}" style="color:#8ab4f8; word-break: break-all; font-size: 18px;" target="_blank">${link}</a>`;
     } catch (error) {
         alert("Lỗi kết nối Firebase: " + error.message);
     } finally {
-        saveBtn.innerText = "Lưu và tạo Link";
+        saveBtn.innerText = "LƯU TOÀN BỘ & TẠO LINK";
         saveBtn.disabled = false;
     }
 });
 
+// Tải đề cho học sinh làm
 async function loadQuiz(id) {
     try {
         const docSnap = await getDoc(doc(db, "quizzes", id));
         if (docSnap.exists()) {
             quizDataGlobal = docSnap.data().danhSach;
             currentQuestionIndex = 0;
-            score = 0; // Reset điểm về 0
+            score = 0; 
             renderCurrentQuestion();
         } else {
             document.getElementById('quiz-content').innerHTML = "Không tìm thấy đề bài!";
@@ -131,11 +189,11 @@ async function loadQuiz(id) {
     }
 }
 
+// Hiển thị câu hỏi cho học sinh
 function renderCurrentQuestion() {
     const container = document.getElementById('quiz-content');
 
     if (currentQuestionIndex >= quizDataGlobal.length) {
-        // Hiện số câu đúng khi kết thúc
         container.innerHTML = `<div class="card" style="text-align: center; border-left: 4px solid #4caf50;">
                                     <h2>🎉 Hoàn thành bài làm!</h2>
                                     <p style="font-size: 20px;">Số câu đúng: <strong style="color: #4caf50;">${score} / ${quizDataGlobal.length}</strong></p>
@@ -151,12 +209,11 @@ function renderCurrentQuestion() {
     if (cauHoi.type === 'trac-nghiem') {
         cauHoi.options.forEach((opt, i) => {
             const letter = String.fromCharCode(65 + i); 
-            // Ẩn chữ A. B. C. D. nếu câu đó là dạng Đúng/Sai (chỉ có 2 options)
             const label = cauHoi.options.length === 2 ? "" : `<strong>${letter}.</strong> `;
             html += `
                 <div class="card option trac-nghiem-opt">
                     ${label}${opt.text}
-                    <div class="explanation">${opt.exp}</div>
+                    <div class="explanation">${opt.exp || "Không có giải thích"}</div>
                 </div>`;
         });
     } else {
@@ -188,7 +245,7 @@ function renderCurrentQuestion() {
                 if (cauHoi.options[i].isCorrect) {
                     this.style.borderColor = '#4caf50';
                     this.innerHTML = "✅ " + this.innerHTML;
-                    score++; // Cộng 1 điểm nếu chọn đúng
+                    score++; 
                 } else {
                     this.style.borderColor = '#f44336';
                     this.innerHTML = "❌ " + this.innerHTML;
