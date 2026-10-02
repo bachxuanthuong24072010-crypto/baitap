@@ -3,8 +3,8 @@ import { getFirestore, collection, addDoc, doc, getDoc } from "https://www.gstat
 
 // Cấu hình Firebase
 const firebaseConfig = {
-    apiKey: "NHAP_CUA_BAN",
-    projectId: "NHAP_CUA_BAN"
+    apiKey: "AIzaSyAc1N9X4y3G-qCnp2dt3DCkFpa1Kc7Wctc",
+    projectId: "baitap-e5015"
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -22,21 +22,48 @@ if (quizId) {
     document.getElementById('admin-panel').style.display = 'block';
 }
 
+// ---------------- PHẦN MỚI THÊM: Ẩn/Hiện nhóm nhập liệu ----------------
+const questionType = document.getElementById('question-type');
+if (questionType) {
+    questionType.addEventListener('change', function() {
+        if (this.value === 'trac-nghiem') {
+            document.getElementById('trac-nghiem-group').style.display = 'block';
+            document.getElementById('tu-luan-group').style.display = 'none';
+        } else {
+            document.getElementById('trac-nghiem-group').style.display = 'none';
+            document.getElementById('tu-luan-group').style.display = 'block';
+        }
+    });
+}
+// ------------------------------------------------------------------------
+
 // Xử lý nút Thêm câu hỏi
 document.getElementById('btn-add').addEventListener('click', () => {
     const questionText = document.getElementById('question').value;
+    const type = document.getElementById('question-type').value; // Lấy loại câu hỏi
+
     if (!questionText) {
         alert("Vui lòng nhập câu hỏi!");
         return;
     }
 
-    danhSachCauHoi.push({
-        question: questionText,
-        options: [
-            { text: document.getElementById('opt-a').value, exp: document.getElementById('exp-a').value },
-            { text: document.getElementById('opt-b').value, exp: document.getElementById('exp-b').value }
-        ]
-    });
+    // Phân loại khi lưu dữ liệu
+    if (type === 'trac-nghiem') {
+        danhSachCauHoi.push({
+            type: "trac-nghiem",
+            question: questionText,
+            options: [
+                { text: document.getElementById('opt-a').value, exp: document.getElementById('exp-a').value },
+                { text: document.getElementById('opt-b').value, exp: document.getElementById('exp-b').value }
+            ]
+        });
+    } else {
+        danhSachCauHoi.push({
+            type: type, // "tra-loi-ngan" hoặc "tu-luan"
+            question: questionText,
+            answerKey: document.getElementById('answer-key').value
+        });
+    }
     
     // Xóa trắng ô nhập
     document.getElementById('question').value = '';
@@ -44,13 +71,13 @@ document.getElementById('btn-add').addEventListener('click', () => {
     document.getElementById('exp-a').value = '';
     document.getElementById('opt-b').value = '';
     document.getElementById('exp-b').value = '';
+    document.getElementById('answer-key').value = '';
     
     alert(`Đã lưu tạm câu ${danhSachCauHoi.length}. Hãy nhập đề câu tiếp theo!`);
 });
 
 // Xử lý nút Lưu và tạo Link
 document.getElementById('btn-save').addEventListener('click', async () => {
-    // Nếu đang gõ dở mà quên bấm thêm, tự động thêm vào
     if (document.getElementById('question').value.trim() !== "") {
         document.getElementById('btn-add').click();
     }
@@ -60,7 +87,6 @@ document.getElementById('btn-save').addEventListener('click', async () => {
         return;
     }
 
-    // Đẩy cả mảng lên Firebase
     const docRef = await addDoc(collection(db, "quizzes"), { danhSach: danhSachCauHoi });
     
     const baseUrl = window.location.origin + window.location.pathname;
@@ -75,26 +101,36 @@ async function loadQuiz(id) {
         const data = docSnap.data();
         let html = '';
         
-        // Duyệt qua mảng để in ra tất cả câu hỏi
         data.danhSach.forEach((cauHoi, index) => {
             html += `<div class="card" style="margin-top: 20px; border-left: 4px solid #8ab4f8;">
                         <strong>Câu ${index + 1}:</strong> ${cauHoi.question}
                      </div>`;
             
-            cauHoi.options.forEach((opt, i) => {
-                const letter = String.fromCharCode(65 + i); // A, B
+            // Phân loại khi hiển thị ra cho người làm bài
+            if (!cauHoi.type || cauHoi.type === 'trac-nghiem') {
+                // Render trắc nghiệm
+                cauHoi.options.forEach((opt, i) => {
+                    const letter = String.fromCharCode(65 + i); 
+                    html += `
+                        <div class="card option" onclick="this.classList.toggle('active')">
+                            <strong>${letter}.</strong> ${opt.text}
+                            <div class="explanation">${opt.exp}</div>
+                        </div>`;
+                });
+            } else {
+                // Render ô tự luận / trả lời ngắn + Nút xem đáp án
                 html += `
-                    <div class="card option" onclick="this.classList.toggle('active')">
-                        <strong>${letter}.</strong> ${opt.text}
-                        <div class="explanation">${opt.exp}</div>
+                    <textarea placeholder="Nhập câu trả lời của bạn vào đây..."></textarea>
+                    <div class="card option" onclick="this.classList.toggle('active')" style="margin-top: 10px; background-color: #202124;">
+                        <strong>👁️ Bấm vào đây để xem đáp án gốc</strong>
+                        <div class="explanation">${cauHoi.answerKey}</div>
                     </div>`;
-            });
+            }
         });
         
         const container = document.getElementById('quiz-content');
         container.innerHTML = html;
         
-        // Render công thức
         if (typeof renderMathInElement === "function") {
             renderMathInElement(container, { delimiters: [{left: "$$", right: "$$", display: false}] });
         }
