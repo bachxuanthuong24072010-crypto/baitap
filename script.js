@@ -31,13 +31,18 @@ if (quizId) {
 const questionType = document.getElementById('question-type');
 if (questionType) {
     questionType.addEventListener('change', function() {
-        document.getElementById('trac-nghiem-group').style.display = 'none';
-        document.getElementById('dung-sai-group').style.display = 'none';
-        document.getElementById('tra-loi-ngan-group').style.display = 'none';
+        // Fix lỗi chuyển giao diện
+        const gNghiem = document.getElementById('trac-nghiem-group');
+        const gSai = document.getElementById('dung-sai-group');
+        const gLoi = document.getElementById('tra-loi-ngan-group');
 
-        if (this.value === 'trac-nghiem') document.getElementById('trac-nghiem-group').style.display = 'block';
-        else if (this.value === 'dung-sai') document.getElementById('dung-sai-group').style.display = 'block';
-        else document.getElementById('tra-loi-ngan-group').style.display = 'block';
+        if(gNghiem) gNghiem.style.display = 'none';
+        if(gSai) gSai.style.display = 'none';
+        if(gLoi) gLoi.style.display = 'none';
+
+        if (this.value === 'trac-nghiem' && gNghiem) gNghiem.style.display = 'block';
+        else if (this.value === 'dung-sai' && gSai) gSai.style.display = 'block';
+        else if (this.value === 'tra-loi-ngan' && gLoi) gLoi.style.display = 'block';
     });
 }
 
@@ -46,10 +51,7 @@ document.getElementById('btn-add').addEventListener('click', () => {
     const questionText = document.getElementById('question').value.trim();
     const type = document.getElementById('question-type').value;
 
-    if (!questionText) {
-        alert("Vui lòng nhập câu hỏi!");
-        return;
-    }
+    if (!questionText) return alert("Vui lòng nhập câu hỏi!");
 
     if (type === 'trac-nghiem') {
         const correctIndex = parseInt(document.querySelector('input[name="correct-answer"]:checked').value);
@@ -57,10 +59,10 @@ document.getElementById('btn-add').addEventListener('click', () => {
             type: "trac-nghiem",
             question: questionText,
             options: [
-                { text: document.getElementById('opt-a').value, exp: document.getElementById('exp-a').value, isCorrect: correctIndex === 0 },
-                { text: document.getElementById('opt-b').value, exp: document.getElementById('exp-b').value, isCorrect: correctIndex === 1 },
-                { text: document.getElementById('opt-c').value, exp: document.getElementById('exp-c').value, isCorrect: correctIndex === 2 },
-                { text: document.getElementById('opt-d').value, exp: document.getElementById('exp-d').value, isCorrect: correctIndex === 3 }
+                { text: document.getElementById('opt-a').value, isCorrect: correctIndex === 0 },
+                { text: document.getElementById('opt-b').value, isCorrect: correctIndex === 1 },
+                { text: document.getElementById('opt-c').value, isCorrect: correctIndex === 2 },
+                { text: document.getElementById('opt-d').value, isCorrect: correctIndex === 3 }
             ]
         });
     } else if (type === 'dung-sai') {
@@ -69,7 +71,7 @@ document.getElementById('btn-add').addEventListener('click', () => {
             question: questionText,
             statements: ['a', 'b', 'c', 'd'].map(id => ({
                 text: document.getElementById(`ds-opt-${id}`).value.trim(),
-                isTrue: document.getElementById(`ds-ans-${id}`).value === 'true'
+                isTrue: document.getElementById(`ds-ans-${id}`).checked // Lấy trạng thái Tích
             }))
         });
     } else {
@@ -84,9 +86,8 @@ document.getElementById('btn-add').addEventListener('click', () => {
     document.getElementById('question').value = '';
     ['a', 'b', 'c', 'd'].forEach(id => {
         if(document.getElementById(`opt-${id}`)) document.getElementById(`opt-${id}`).value = '';
-        if(document.getElementById(`exp-${id}`)) document.getElementById(`exp-${id}`).value = '';
         if(document.getElementById(`ds-opt-${id}`)) document.getElementById(`ds-opt-${id}`).value = '';
-        if(document.getElementById(`ds-ans-${id}`)) document.getElementById(`ds-ans-${id}`).value = 'true';
+        if(document.getElementById(`ds-ans-${id}`)) document.getElementById(`ds-ans-${id}`).checked = false;
     });
     if(document.getElementById('answer-key')) document.getElementById('answer-key').value = '';
 
@@ -115,13 +116,10 @@ function renderPreview() {
             });
         } else if (cau.type === "dung-sai") {
             cau.statements.forEach((stmt, j) => {
-                let tSel = stmt.isTrue ? "selected" : "";
-                let fSel = !stmt.isTrue ? "selected" : "";
+                let checked = stmt.isTrue ? "checked" : "";
                 html += `<div style="display:flex; align-items:center; margin-bottom:5px;">
-                            <select onchange="window.danhSachCauHoi[${i}].statements[${j}].isTrue = (this.value === 'true')" style="width:90px; margin-right:10px;">
-                                <option value="true" ${tSel}>ĐÚNG</option>
-                                <option value="false" ${fSel}>SAI</option>
-                            </select>
+                            <input type="checkbox" ${checked} style="width:auto; margin-right:10px;"
+                                onchange="window.danhSachCauHoi[${i}].statements[${j}].isTrue = this.checked">
                             <input type="text" value="${stmt.text}" style="margin:0;" onchange="window.danhSachCauHoi[${i}].statements[${j}].text = this.value">
                         </div>`;
             });
@@ -171,7 +169,7 @@ function renderCurrentQuestion() {
     if (currentQuestionIndex >= quizDataGlobal.length) {
         container.innerHTML = `<div class="card" style="text-align: center; border-left: 4px solid #4caf50;">
                                     <h2>🎉 Hoàn thành bài làm!</h2>
-                                    <p style="font-size: 20px;">Điểm của bạn: <strong style="color: #4caf50;">${score} / ${quizDataGlobal.length}</strong></p>
+                                    <p style="font-size: 20px;">Điểm của bạn: <strong style="color: #4caf50;">${score}</strong></p>
                                </div>`;
         return;
     }
@@ -184,22 +182,15 @@ function renderCurrentQuestion() {
     if (cauHoi.type === 'trac-nghiem') {
         cauHoi.options.forEach((opt, i) => {
             const letter = String.fromCharCode(65 + i); 
-            html += `<div class="card option trac-nghiem-opt">
-                        <strong>${letter}.</strong> ${opt.text}
-                        <div class="explanation">${opt.exp || "Không có giải thích"}</div>
-                    </div>`;
+            html += `<div class="card option trac-nghiem-opt"><strong>${letter}.</strong> ${opt.text}</div>`;
         });
     } else if (cauHoi.type === 'dung-sai') {
+        html += `<p style="color:#fbbc04; font-size:14px; margin-bottom:10px;">* Có thể chọn nhiều đáp án. Bấm "Xác nhận" để kiểm tra.</p>`;
         cauHoi.statements.forEach((stmt, i) => {
             const letter = String.fromCharCode(65 + i); 
-            html += `<div class="card" style="margin-bottom:10px;">
-                        <strong>${letter}.</strong> ${stmt.text}
-                        <div style="margin-top:10px; display:flex; gap:10px;">
-                            <button class="btn-tf" data-id="${i}" data-val="true" style="background:#303134; border:1px solid #5f6368; color:white;">ĐÚNG</button>
-                            <button class="btn-tf" data-id="${i}" data-val="false" style="background:#303134; border:1px solid #5f6368; color:white;">SAI</button>
-                        </div>
-                    </div>`;
+            html += `<div class="card option dung-sai-opt" data-id="${i}"><strong>${letter}.</strong> ${stmt.text}</div>`;
         });
+        html += `<button id="btn-check-ds" style="background:#fbbc04; color:#202124;">Xác nhận các ô đã chọn</button>`;
     } else {
         html += `<input type="text" id="short-ans-input" placeholder="Nhập đáp án của bạn..." style="margin-bottom:10px;">
                  <button id="btn-check-short" style="background:#fbbc04; color:#202124;">Kiểm tra đáp án</button>
@@ -232,26 +223,31 @@ function renderCurrentQuestion() {
             });
         });
     } else if (cauHoi.type === 'dung-sai') {
-        let answeredRows = [false, false, false, false];
-        const tfBtns = container.querySelectorAll('.btn-tf');
-        tfBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const id = this.getAttribute('data-id');
-                const val = this.getAttribute('data-val') === 'true';
-                if (answeredRows[id]) return;
-                answeredRows[id] = true;
-                
-                if (cauHoi.statements[id].isTrue === val) {
-                    this.style.backgroundColor = '#4caf50';
-                    this.innerHTML = "✅ " + this.innerHTML;
-                    score += 0.25; // Đúng 1 ý được 0.25 điểm
+        const optionEls = container.querySelectorAll('.dung-sai-opt');
+        let answered = false;
+        
+        optionEls.forEach(el => {
+            el.addEventListener('click', function() {
+                if(answered) return;
+                this.classList.toggle('active'); // Cho phép tích nhiều ô
+            });
+        });
+
+        document.getElementById('btn-check-ds').addEventListener('click', () => {
+            if (answered) return; answered = true;
+            let correctCount = 0;
+            optionEls.forEach((el, i) => {
+                let isSelected = el.classList.contains('active');
+                let isCorrect = cauHoi.statements[i].isTrue;
+
+                if (isSelected === isCorrect) {
+                    correctCount++;
+                    el.style.borderColor = '#4caf50'; el.innerHTML += " ✅";
                 } else {
-                    this.style.backgroundColor = '#f44336';
-                    this.innerHTML = "❌ " + this.innerHTML;
-                    const correctBtn = container.querySelector(`.btn-tf[data-id="${id}"][data-val="${cauHoi.statements[id].isTrue}"]`);
-                    correctBtn.style.border = '2px solid #4caf50';
+                    el.style.borderColor = '#f44336'; el.innerHTML += " ❌";
                 }
             });
+            score += (correctCount === 4) ? 1 : (correctCount * 0.25);
         });
     } else if (cauHoi.type === 'tra-loi-ngan') {
         const btnCheck = document.getElementById('btn-check-short');
