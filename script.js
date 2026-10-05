@@ -30,20 +30,20 @@ if (quizId) {
 
 const questionType = document.getElementById('question-type');
 if (questionType) {
-    questionType.addEventListener('change', function() {
-        // Fix lỗi chuyển giao diện
+    function updateFormDisplay() {
+        const type = questionType.value;
         const gNghiem = document.getElementById('trac-nghiem-group');
         const gSai = document.getElementById('dung-sai-group');
         const gLoi = document.getElementById('tra-loi-ngan-group');
 
-        if(gNghiem) gNghiem.style.display = 'none';
-        if(gSai) gSai.style.display = 'none';
-        if(gLoi) gLoi.style.display = 'none';
-
-        if (this.value === 'trac-nghiem' && gNghiem) gNghiem.style.display = 'block';
-        else if (this.value === 'dung-sai' && gSai) gSai.style.display = 'block';
-        else if (this.value === 'tra-loi-ngan' && gLoi) gLoi.style.display = 'block';
-    });
+        if(gNghiem) gNghiem.style.display = (type === 'trac-nghiem') ? 'block' : 'none';
+        if(gSai) gSai.style.display = (type === 'dung-sai') ? 'block' : 'none';
+        if(gLoi) gLoi.style.display = (type === 'tra-loi-ngan') ? 'block' : 'none';
+    }
+    
+    questionType.addEventListener('change', updateFormDisplay);
+    // Chạy luôn lúc vừa load trang để đảm bảo hiển thị đúng
+    updateFormDisplay();
 }
 
 // Thêm câu hỏi
@@ -185,12 +185,15 @@ function renderCurrentQuestion() {
             html += `<div class="card option trac-nghiem-opt"><strong>${letter}.</strong> ${opt.text}</div>`;
         });
     } else if (cauHoi.type === 'dung-sai') {
-        html += `<p style="color:#fbbc04; font-size:14px; margin-bottom:10px;">* Có thể chọn nhiều đáp án. Bấm "Xác nhận" để kiểm tra.</p>`;
+        html += `<p style="color:#fbbc04; font-size:14px; margin-bottom:10px;">* Tích chọn vào các ô ĐÚNG. Có thể chọn nhiều ý. Bấm "Xác nhận" để kiểm tra.</p>`;
         cauHoi.statements.forEach((stmt, i) => {
             const letter = String.fromCharCode(65 + i); 
-            html += `<div class="card option dung-sai-opt" data-id="${i}"><strong>${letter}.</strong> ${stmt.text}</div>`;
+            html += `<div class="card option dung-sai-opt" data-id="${i}" style="display: flex; align-items: center; justify-content: flex-start; gap: 10px;">
+                        <input type="checkbox" id="student-cb-${i}" style="width: 20px; height: 20px; cursor: pointer; margin: 0;">
+                        <label for="student-cb-${i}" style="cursor: pointer; flex: 1; margin: 0;"><strong>${letter}.</strong> ${stmt.text}</label>
+                     </div>`;
         });
-        html += `<button id="btn-check-ds" style="background:#fbbc04; color:#202124;">Xác nhận các ô đã chọn</button>`;
+        html += `<button id="btn-check-ds" style="background:#fbbc04; color:#202124;">Xác nhận đáp án</button>`;
     } else {
         html += `<input type="text" id="short-ans-input" placeholder="Nhập đáp án của bạn..." style="margin-bottom:10px;">
                  <button id="btn-check-short" style="background:#fbbc04; color:#202124;">Kiểm tra đáp án</button>
@@ -226,10 +229,17 @@ function renderCurrentQuestion() {
         const optionEls = container.querySelectorAll('.dung-sai-opt');
         let answered = false;
         
-        optionEls.forEach(el => {
-            el.addEventListener('click', function() {
-                if(answered) return;
-                this.classList.toggle('active'); // Cho phép tích nhiều ô
+        optionEls.forEach((el, i) => {
+            const cb = el.querySelector('input[type="checkbox"]');
+            el.addEventListener('click', function(e) {
+                if(answered) {
+                    e.preventDefault();
+                    return;
+                }
+                // Nhấn vào khung nhưng không nhấn trực tiếp vào checkbox
+                if (e.target !== cb && e.target.tagName !== 'LABEL') {
+                    cb.checked = !cb.checked;
+                }
             });
         });
 
@@ -237,14 +247,19 @@ function renderCurrentQuestion() {
             if (answered) return; answered = true;
             let correctCount = 0;
             optionEls.forEach((el, i) => {
-                let isSelected = el.classList.contains('active');
+                const cb = el.querySelector('input[type="checkbox"]');
+                let isSelected = cb.checked;
                 let isCorrect = cauHoi.statements[i].isTrue;
+
+                cb.disabled = true; // Khóa không cho sửa đáp án
 
                 if (isSelected === isCorrect) {
                     correctCount++;
-                    el.style.borderColor = '#4caf50'; el.innerHTML += " ✅";
+                    el.style.borderColor = '#4caf50'; 
+                    el.innerHTML += "<span style='margin-left: auto;'> ✅</span>";
                 } else {
-                    el.style.borderColor = '#f44336'; el.innerHTML += " ❌";
+                    el.style.borderColor = '#f44336'; 
+                    el.innerHTML += "<span style='margin-left: auto;'> ❌</span>";
                 }
             });
             score += (correctCount === 4) ? 1 : (correctCount * 0.25);
