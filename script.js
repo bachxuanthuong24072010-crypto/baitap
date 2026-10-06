@@ -16,7 +16,13 @@ const db = getFirestore(app);
 window.danhSachCauHoi = [];
 let quizDataGlobal = [];
 let currentQuestionIndex = 0;
-let score = 0;
+
+// Thay thế biến score bằng object lưu thống kê số câu đúng/tổng số câu
+let quizStats = {
+    'trac-nghiem': { correct: 0, total: 0 },
+    'dung-sai': { correct: 0, total: 0 },
+    'tra-loi-ngan': { correct: 0, total: 0 }
+};
 
 const urlParams = new URLSearchParams(window.location.search);
 const quizId = urlParams.get('id');
@@ -42,7 +48,6 @@ if (questionType) {
     }
     
     questionType.addEventListener('change', updateFormDisplay);
-    // Chạy luôn lúc vừa load trang để đảm bảo hiển thị đúng
     updateFormDisplay();
 }
 
@@ -71,7 +76,7 @@ document.getElementById('btn-add').addEventListener('click', () => {
             question: questionText,
             statements: ['a', 'b', 'c', 'd'].map(id => ({
                 text: document.getElementById(`ds-opt-${id}`).value.trim(),
-                isTrue: document.getElementById(`ds-ans-${id}`).checked // Lấy trạng thái Tích
+                isTrue: document.getElementById(`ds-ans-${id}`).checked 
             }))
         });
     } else {
@@ -156,7 +161,18 @@ async function loadQuiz(id) {
         const docSnap = await getDoc(doc(db, "quizzes", id));
         if (docSnap.exists()) {
             quizDataGlobal = docSnap.data().danhSach;
-            currentQuestionIndex = 0; score = 0;
+            currentQuestionIndex = 0;
+            
+            // Khởi tạo và đếm tổng số câu cho từng dạng
+            quizStats = {
+                'trac-nghiem': { correct: 0, total: 0 },
+                'dung-sai': { correct: 0, total: 0 },
+                'tra-loi-ngan': { correct: 0, total: 0 }
+            };
+            quizDataGlobal.forEach(q => {
+                if (quizStats[q.type]) quizStats[q.type].total++;
+            });
+            
             renderCurrentQuestion();
         } else document.getElementById('quiz-content').innerHTML = "Không tìm thấy đề bài!";
     } catch (err) { document.getElementById('quiz-content').innerHTML = "Lỗi tải đề: " + err.message; }
@@ -167,9 +183,24 @@ function renderCurrentQuestion() {
     const container = document.getElementById('quiz-content');
 
     if (currentQuestionIndex >= quizDataGlobal.length) {
+        // Tạo bảng thống kê khi hoàn thành bài
+        let resultDetails = "";
+        
+        if (quizStats['trac-nghiem'].total > 0) {
+            resultDetails += `<p style="font-size: 18px; margin: 10px 0;">Trắc nghiệm: <strong style="color: #4caf50;">${quizStats['trac-nghiem'].correct}/${quizStats['trac-nghiem'].total}</strong></p>`;
+        }
+        if (quizStats['dung-sai'].total > 0) {
+            resultDetails += `<p style="font-size: 18px; margin: 10px 0;">Đúng / Sai: <strong style="color: #4caf50;">${quizStats['dung-sai'].correct}/${quizStats['dung-sai'].total}</strong></p>`;
+        }
+        if (quizStats['tra-loi-ngan'].total > 0) {
+            resultDetails += `<p style="font-size: 18px; margin: 10px 0;">Trả lời ngắn: <strong style="color: #4caf50;">${quizStats['tra-loi-ngan'].correct}/${quizStats['tra-loi-ngan'].total}</strong></p>`;
+        }
+
         container.innerHTML = `<div class="card" style="text-align: center; border-left: 4px solid #4caf50;">
                                     <h2>🎉 Hoàn thành bài làm!</h2>
-                                    <p style="font-size: 20px;">Điểm của bạn: <strong style="color: #4caf50;">${score}</strong></p>
+                                    <div style="background: #202124; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                                        ${resultDetails}
+                                    </div>
                                </div>`;
         return;
     }
@@ -207,7 +238,7 @@ function renderCurrentQuestion() {
         renderMathInElement(container, { delimiters: [{left: "$$", right: "$$", display: false}] });
     }
 
-    // Logic chấm điểm
+    // Logic thống kê số câu đúng
     if (cauHoi.type === 'trac-nghiem') {
         const optionEls = container.querySelectorAll('.trac-nghiem-opt');
         let answered = false; 
@@ -216,11 +247,17 @@ function renderCurrentQuestion() {
                 if (answered) return; answered = true;
                 this.classList.add('active'); 
                 if (cauHoi.options[i].isCorrect) {
-                    this.style.borderColor = '#4caf50'; this.innerHTML = "✅ " + this.innerHTML; score++;
+                    this.style.borderColor = '#4caf50'; 
+                    this.innerHTML = "✅ " + this.innerHTML; 
+                    quizStats['trac-nghiem'].correct++; // Cộng 1 câu đúng
                 } else {
-                    this.style.borderColor = '#f44336'; this.innerHTML = "❌ " + this.innerHTML;
+                    this.style.borderColor = '#f44336'; 
+                    this.innerHTML = "❌ " + this.innerHTML;
                     optionEls.forEach((optEl, optIndex) => {
-                        if (cauHoi.options[optIndex].isCorrect) { optEl.style.borderColor = '#4caf50'; optEl.classList.add('active'); }
+                        if (cauHoi.options[optIndex].isCorrect) { 
+                            optEl.style.borderColor = '#4caf50'; 
+                            optEl.classList.add('active'); 
+                        }
                     });
                 }
             });
@@ -236,7 +273,6 @@ function renderCurrentQuestion() {
                     e.preventDefault();
                     return;
                 }
-                // Nhấn vào khung nhưng không nhấn trực tiếp vào checkbox
                 if (e.target !== cb && e.target.tagName !== 'LABEL') {
                     cb.checked = !cb.checked;
                 }
@@ -262,7 +298,11 @@ function renderCurrentQuestion() {
                     el.innerHTML += "<span style='margin-left: auto;'> ❌</span>";
                 }
             });
-            score += (correctCount === 4) ? 1 : (correctCount * 0.25);
+            
+            // Tính là 1 câu đúng nếu chọn đúng cả 4 ý
+            if (correctCount === 4) {
+                quizStats['dung-sai'].correct++;
+            }
         });
     } else if (cauHoi.type === 'tra-loi-ngan') {
         const btnCheck = document.getElementById('btn-check-short');
@@ -274,9 +314,12 @@ function renderCurrentQuestion() {
             const resDiv = document.getElementById('short-ans-result');
             
             if (userAns === correctAns) {
-                resDiv.style.color = '#4caf50'; resDiv.innerText = "✅ Chính xác!"; score++;
+                resDiv.style.color = '#4caf50'; 
+                resDiv.innerText = "✅ Chính xác!"; 
+                quizStats['tra-loi-ngan'].correct++; // Cộng 1 câu đúng
             } else {
-                resDiv.style.color = '#f44336'; resDiv.innerText = `❌ Sai. Đáp án đúng là: ${cauHoi.answerKey}`;
+                resDiv.style.color = '#f44336'; 
+                resDiv.innerText = `❌ Sai. Đáp án đúng là: ${cauHoi.answerKey}`;
             }
         });
     }
