@@ -193,15 +193,15 @@ function renderCurrentQuestion() {
                               </p>`;
         }
 
-        // Cột Đúng/Sai (Liệt kê chi tiết từng câu)
+        // Cột Đúng/Sai (Hiển thị định dạng Câu 1: X/4 ; Câu 2: Y/4)
         if (quizStats['dung-sai'].total > 0) {
             let dsText = quizStats['dung-sai'].details.map((detail, idx) => {
-                return `Câu ${idx + 1} / đúng ${detail.correctCount} ý`;
+                return `Câu ${idx + 1}: ${detail.correctCount}/4`;
             }).join(' ; '); // Nối các câu bằng dấu chấm phẩy
             
             resultDetails += `<p style="font-size: 16px; margin: 10px 0; border-bottom: 1px solid #5f6368; padding-bottom: 15px;">
-                                <strong style="color: white;">Đúng sai:</strong><br>
-                                <span style="color: #8ab4f8; display: block; margin-top: 8px; line-height: 1.6;">${dsText}</span>
+                                <strong style="color: white;">Đúng / Sai:</strong> 
+                                <span style="color: #4caf50; font-weight: bold; margin-left: 8px;">${dsText}</span>
                               </p>`;
         }
 
