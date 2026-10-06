@@ -1,10 +1,3 @@
-Chào bạn, hình ảnh bạn gửi là giao diện cũ khi hệ thống vẫn còn lưu cơ chế cộng điểm. Để hiển thị đúng bảng phân tích theo định dạng mà bạn vừa yêu cầu (liệt kê chi tiết từng câu Đúng/Sai đúng bao nhiêu ý), mình đã viết lại chi tiết phần **Kết quả**. 
-
-Đồng thời, mình đã xử lý thêm một trường hợp: Nếu học sinh không ấn "Xác nhận đáp án" ở câu Đúng/Sai mà ấn luôn "Chuyển câu tiếp" thì hệ thống sẽ tự hiểu là câu đó đúng 0 ý để bảng thống kê không bị thiếu sót.
-
-Bạn hãy **xóa toàn bộ** code cũ trong file **`script.js`** và dán đoạn code mới này vào nhé:
-
-```javascript
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
 import { getFirestore, collection, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
@@ -358,4 +351,3 @@ function renderCurrentQuestion() {
         renderCurrentQuestion(); 
     });
 }
-```
