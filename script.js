@@ -1,3 +1,10 @@
+Chào bạn, hình ảnh bạn gửi là giao diện cũ khi hệ thống vẫn còn lưu cơ chế cộng điểm. Để hiển thị đúng bảng phân tích theo định dạng mà bạn vừa yêu cầu (liệt kê chi tiết từng câu Đúng/Sai đúng bao nhiêu ý), mình đã viết lại chi tiết phần **Kết quả**. 
+
+Đồng thời, mình đã xử lý thêm một trường hợp: Nếu học sinh không ấn "Xác nhận đáp án" ở câu Đúng/Sai mà ấn luôn "Chuyển câu tiếp" thì hệ thống sẽ tự hiểu là câu đó đúng 0 ý để bảng thống kê không bị thiếu sót.
+
+Bạn hãy **xóa toàn bộ** code cũ trong file **`script.js`** và dán đoạn code mới này vào nhé:
+
+```javascript
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
 import { getFirestore, collection, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
@@ -17,10 +24,10 @@ window.danhSachCauHoi = [];
 let quizDataGlobal = [];
 let currentQuestionIndex = 0;
 
-// Thay thế biến score bằng object lưu thống kê số câu đúng/tổng số câu
+// Thống kê chi tiết, mảng details của dung-sai dùng để lưu số ý đúng của TỪNG câu
 let quizStats = {
     'trac-nghiem': { correct: 0, total: 0 },
-    'dung-sai': { correct: 0, total: 0 },
+    'dung-sai': { details: [], total: 0 },
     'tra-loi-ngan': { correct: 0, total: 0 }
 };
 
@@ -166,7 +173,7 @@ async function loadQuiz(id) {
             // Khởi tạo và đếm tổng số câu cho từng dạng
             quizStats = {
                 'trac-nghiem': { correct: 0, total: 0 },
-                'dung-sai': { correct: 0, total: 0 },
+                'dung-sai': { details: [], total: 0 }, // mảng details dùng để lưu số ý đúng từng câu
                 'tra-loi-ngan': { correct: 0, total: 0 }
             };
             quizDataGlobal.forEach(q => {
@@ -183,22 +190,38 @@ function renderCurrentQuestion() {
     const container = document.getElementById('quiz-content');
 
     if (currentQuestionIndex >= quizDataGlobal.length) {
-        // Tạo bảng thống kê khi hoàn thành bài
+        // TẠO BẢNG PHÂN TÍCH KẾT QUẢ KHI HOÀN THÀNH
         let resultDetails = "";
         
+        // Cột Trắc Nghiệm
         if (quizStats['trac-nghiem'].total > 0) {
-            resultDetails += `<p style="font-size: 18px; margin: 10px 0;">Trắc nghiệm: <strong style="color: #4caf50;">${quizStats['trac-nghiem'].correct}/${quizStats['trac-nghiem'].total}</strong></p>`;
-        }
-        if (quizStats['dung-sai'].total > 0) {
-            resultDetails += `<p style="font-size: 18px; margin: 10px 0;">Đúng / Sai: <strong style="color: #4caf50;">${quizStats['dung-sai'].correct}/${quizStats['dung-sai'].total}</strong></p>`;
-        }
-        if (quizStats['tra-loi-ngan'].total > 0) {
-            resultDetails += `<p style="font-size: 18px; margin: 10px 0;">Trả lời ngắn: <strong style="color: #4caf50;">${quizStats['tra-loi-ngan'].correct}/${quizStats['tra-loi-ngan'].total}</strong></p>`;
+            resultDetails += `<p style="font-size: 16px; margin: 10px 0; border-bottom: 1px solid #5f6368; padding-bottom: 15px;">
+                                <strong style="color: white;">Trắc nghiệm:</strong> <span style="color: #4caf50; font-weight: bold;">${quizStats['trac-nghiem'].correct} câu đúng</span> / ${quizStats['trac-nghiem'].total} câu
+                              </p>`;
         }
 
-        container.innerHTML = `<div class="card" style="text-align: center; border-left: 4px solid #4caf50;">
-                                    <h2>🎉 Hoàn thành bài làm!</h2>
-                                    <div style="background: #202124; padding: 15px; border-radius: 8px; margin-top: 15px;">
+        // Cột Đúng/Sai (Liệt kê chi tiết từng câu)
+        if (quizStats['dung-sai'].total > 0) {
+            let dsText = quizStats['dung-sai'].details.map((detail, idx) => {
+                return `Câu ${idx + 1} / đúng ${detail.correctCount} ý`;
+            }).join(' ; '); // Nối các câu bằng dấu chấm phẩy
+            
+            resultDetails += `<p style="font-size: 16px; margin: 10px 0; border-bottom: 1px solid #5f6368; padding-bottom: 15px;">
+                                <strong style="color: white;">Đúng sai:</strong><br>
+                                <span style="color: #8ab4f8; display: block; margin-top: 8px; line-height: 1.6;">${dsText}</span>
+                              </p>`;
+        }
+
+        // Cột Trả lời ngắn
+        if (quizStats['tra-loi-ngan'].total > 0) {
+            resultDetails += `<p style="font-size: 16px; margin: 10px 0;">
+                                <strong style="color: white;">Trả lời ngắn:</strong> <span style="color: #4caf50; font-weight: bold;">${quizStats['tra-loi-ngan'].correct} câu đúng</span> / ${quizStats['tra-loi-ngan'].total} câu
+                              </p>`;
+        }
+
+        container.innerHTML = `<div class="card" style="border-left: 4px solid #8ab4f8;">
+                                    <h2 style="text-align: center; margin-bottom: 20px;">📊 Phân tích bài làm</h2>
+                                    <div style="background: #202124; padding: 15px; border-radius: 8px; text-align: left;">
                                         ${resultDetails}
                                     </div>
                                </div>`;
@@ -238,10 +261,11 @@ function renderCurrentQuestion() {
         renderMathInElement(container, { delimiters: [{left: "$$", right: "$$", display: false}] });
     }
 
-    // Logic thống kê số câu đúng
+    let answered = false;
+
+    // Logic thống kê câu trắc nghiệm
     if (cauHoi.type === 'trac-nghiem') {
         const optionEls = container.querySelectorAll('.trac-nghiem-opt');
-        let answered = false; 
         optionEls.forEach((el, i) => {
             el.addEventListener('click', function() {
                 if (answered) return; answered = true;
@@ -249,7 +273,7 @@ function renderCurrentQuestion() {
                 if (cauHoi.options[i].isCorrect) {
                     this.style.borderColor = '#4caf50'; 
                     this.innerHTML = "✅ " + this.innerHTML; 
-                    quizStats['trac-nghiem'].correct++; // Cộng 1 câu đúng
+                    quizStats['trac-nghiem'].correct++; 
                 } else {
                     this.style.borderColor = '#f44336'; 
                     this.innerHTML = "❌ " + this.innerHTML;
@@ -262,10 +286,10 @@ function renderCurrentQuestion() {
                 }
             });
         });
-    } else if (cauHoi.type === 'dung-sai') {
+    } 
+    // Logic thống kê câu đúng sai
+    else if (cauHoi.type === 'dung-sai') {
         const optionEls = container.querySelectorAll('.dung-sai-opt');
-        let answered = false;
-        
         optionEls.forEach((el, i) => {
             const cb = el.querySelector('input[type="checkbox"]');
             el.addEventListener('click', function(e) {
@@ -299,14 +323,13 @@ function renderCurrentQuestion() {
                 }
             });
             
-            // Tính là 1 câu đúng nếu chọn đúng cả 4 ý
-            if (correctCount === 4) {
-                quizStats['dung-sai'].correct++;
-            }
+            // Lưu lại số ý đúng của CÂU NÀY vào mảng details
+            quizStats['dung-sai'].details.push({ correctCount: correctCount });
         });
-    } else if (cauHoi.type === 'tra-loi-ngan') {
+    } 
+    // Logic thống kê câu trả lời ngắn
+    else if (cauHoi.type === 'tra-loi-ngan') {
         const btnCheck = document.getElementById('btn-check-short');
-        let answered = false;
         btnCheck.addEventListener('click', () => {
             if (answered) return; answered = true;
             const userAns = document.getElementById('short-ans-input').value.trim().toLowerCase();
@@ -316,7 +339,7 @@ function renderCurrentQuestion() {
             if (userAns === correctAns) {
                 resDiv.style.color = '#4caf50'; 
                 resDiv.innerText = "✅ Chính xác!"; 
-                quizStats['tra-loi-ngan'].correct++; // Cộng 1 câu đúng
+                quizStats['tra-loi-ngan'].correct++; 
             } else {
                 resDiv.style.color = '#f44336'; 
                 resDiv.innerText = `❌ Sai. Đáp án đúng là: ${cauHoi.answerKey}`;
@@ -324,7 +347,15 @@ function renderCurrentQuestion() {
         });
     }
 
+    // Chuyển câu tiếp
     document.getElementById('btn-next').addEventListener('click', () => {
-        currentQuestionIndex++; renderCurrentQuestion(); 
+        // Nếu câu này là Đúng/Sai mà học sinh chưa ấn Xác Nhận, mặc định là đúng 0 ý
+        if (!answered && cauHoi.type === 'dung-sai') {
+            quizStats['dung-sai'].details.push({ correctCount: 0 });
+        }
+        
+        currentQuestionIndex++; 
+        renderCurrentQuestion(); 
     });
 }
+```
