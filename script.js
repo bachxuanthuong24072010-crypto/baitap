@@ -34,7 +34,7 @@ if (quizId) {
 }
 
 // ----------------------------------------------------
-// LÕI PHÂN TÍCH NHẬP NHANH (NÂNG CẤP HỖ TRỢ 3 LOẠI)
+// TÍNH NĂNG NHẬP NHANH TỪ VĂN BẢN
 // ----------------------------------------------------
 const toggleBulk = document.getElementById('toggle-bulk');
 if (toggleBulk) {
@@ -60,10 +60,8 @@ if (btnBulkAdd) {
         let addedCount = 0;
         
         function saveParsedQ(q) {
-            // NẾU CÓ 4 LỰA CHỌN A B C D
             if (q.options.length === 4) {
                 let rawAns = q.ansKey.toUpperCase().replace(/\s+/g, '');
-                // Kiểm tra nếu đáp án chỉ là 1 chữ cái A, B, C, D (Trắc nghiệm 1 đáp án)
                 if (rawAns === 'A' || rawAns === 'B' || rawAns === 'C' || rawAns === 'D') {
                     const cIndex = rawAns.charCodeAt(0) - 65;
                     window.danhSachCauHoi.push({
@@ -76,19 +74,17 @@ if (btnBulkAdd) {
                         ]
                     });
                 } else {
-                    // Nếu đáp án có nhiều chữ (VD: Đ, S, Đ, S) -> Đúng/Sai
                     let boolValues = [];
                     let parts = q.ansKey.toUpperCase().split(/[,;.\-]/);
                     if (parts.length >= 4) {
                         parts.forEach(p => boolValues.push(p.includes('Đ') || p.includes('T')));
                     } else {
-                        // Quét từng ký tự một
                         for(let char of q.ansKey.toUpperCase()) {
                             if (char === 'Đ') boolValues.push(true);
                             if (char === 'S') boolValues.push(false);
                         }
                     }
-                    while(boolValues.length < 4) boolValues.push(false); // Chống lỗi
+                    while(boolValues.length < 4) boolValues.push(false);
 
                     window.danhSachCauHoi.push({
                         type: "dung-sai", question: q.question,
@@ -101,7 +97,6 @@ if (btnBulkAdd) {
                     });
                 }
             } 
-            // NẾU KHÔNG CÓ A B C D (Trả lời ngắn)
             else if (q.options.length === 0) {
                 window.danhSachCauHoi.push({
                     type: "tra-loi-ngan", question: q.question, answerKey: q.ansKey
@@ -112,29 +107,24 @@ if (btnBulkAdd) {
         for(let i=0; i < lines.length; i++) {
             let line = lines[i];
             
-            // Dòng bắt đầu câu hỏi mới
             if (line.match(/^(Câu|Bài)\s*\d+:/i) || (!line.match(/^[A-D]\./i) && !line.match(/^Đáp án:/i) && !currentQ)) {
                 if (currentQ && currentQ.ansKey) {
                     saveParsedQ(currentQ); addedCount++;
                 }
                 currentQ = { question: line.replace(/^(Câu|Bài)\s*\d+:\s*/i, ''), options: [], ansKey: null };
             } 
-            // Dòng tùy chọn A. B. C. D.
             else if (line.match(/^[A-D]\./i) && currentQ) {
                 currentQ.options.push(line.replace(/^[A-D]\.\s*/i, '').trim());
             } 
-            // Dòng chốt đáp án
             else if (line.match(/^Đáp án:/i) && currentQ) {
                 currentQ.ansKey = line.replace(/^Đáp án:\s*/i, '').trim();
                 saveParsedQ(currentQ); addedCount++;
                 currentQ = null;
             } 
-            // Nối thêm dòng nếu câu hỏi dài nhiều đoạn
             else if (currentQ && currentQ.options.length === 0 && !currentQ.ansKey) {
                 currentQ.question += '\n' + line; 
             }
         }
-        // Lưu câu cuối
         if (currentQ && currentQ.ansKey) {
             saveParsedQ(currentQ); addedCount++;
         }
@@ -152,11 +142,13 @@ if (btnBulkAdd) {
 }
 // ----------------------------------------------------
 
-// [Phần còn lại giữ nguyên]
+// CẬP NHẬT GIAO DIỆN KHI ĐỔI LOẠI CÂU HỎI
 const questionType = document.getElementById('question-type');
 if (questionType) {
     function updateFormDisplay() {
         const type = questionType.value;
+        
+        // 1. Chỉnh Form Thủ công
         const gNghiem = document.getElementById('trac-nghiem-group');
         const gSai = document.getElementById('dung-sai-group');
         const gLoi = document.getElementById('tra-loi-ngan-group');
@@ -164,6 +156,15 @@ if (questionType) {
         if(gNghiem) gNghiem.style.display = (type === 'trac-nghiem') ? 'block' : 'none';
         if(gSai) gSai.style.display = (type === 'dung-sai') ? 'block' : 'none';
         if(gLoi) gLoi.style.display = (type === 'tra-loi-ngan') ? 'block' : 'none';
+        
+        // 2. Chỉnh bảng Hướng dẫn Nhập Nhanh
+        const hNghiem = document.getElementById('bulk-hint-trac-nghiem');
+        const hSai = document.getElementById('bulk-hint-dung-sai');
+        const hLoi = document.getElementById('bulk-hint-tra-loi-ngan');
+        
+        if(hNghiem) hNghiem.style.display = (type === 'trac-nghiem') ? 'block' : 'none';
+        if(hSai) hSai.style.display = (type === 'dung-sai') ? 'block' : 'none';
+        if(hLoi) hLoi.style.display = (type === 'tra-loi-ngan') ? 'block' : 'none';
     }
     questionType.addEventListener('change', updateFormDisplay);
     updateFormDisplay();
