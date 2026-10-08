@@ -19,6 +19,17 @@
         .btn-blue:hover { background: #aecbfa; }
         .btn-green { background: #4caf50; color: white; padding: 15px; width: 100%; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; }
         .btn-green:hover { background: #45a049; }
+        
+        .ai-notice-box {
+            background: rgba(138, 180, 248, 0.15); 
+            border: 1px solid #8ab4f8; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 25px;
+        }
+        .ai-notice-box li {
+            margin-bottom: 6px;
+        }
     </style>
 </head>
 <body>
@@ -28,11 +39,32 @@
         <!-- TÍNH NĂNG NHẬP NHANH ĐÃ NÂNG CẤP -->
         <div style="background: #2a2b2f; padding: 20px; border-radius: 6px; border: 1px dashed #fbbc04; margin-bottom: 25px;">
             <h3 id="toggle-bulk" style="margin-top: 0; color: #fbbc04; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                <span>⚡ Nhập nhanh hàng loạt từ văn bản (Bấm để mở)</span>
+                <span>⚡ Nhập nhanh hàng loạt từ AI (Bấm để mở)</span>
                 <span id="bulk-icon">▼</span>
             </h3>
-            <div id="bulk-area" style="display: none; margin-top: 15px;">
-                <p style="font-size: 14px; color: #e8eaed; margin-bottom: 10px; line-height: 1.5;"><b>Mẫu chuẩn để copy nhờ AI viết (Đổi mẫu bằng cách chọn Loại câu hỏi ở ô bên dưới):</b></p>
+            <div id="bulk-area" style="display: none; margin-top: 20px;">
+                
+                <!-- HỘP THÔNG BÁO LINK AI CỦA BẠN -->
+                <div class="ai-notice-box">
+                    <h4 style="margin: 0 0 12px 0; color: #8ab4f8; font-size: 18px;">🤖 TRỢ LÝ AI SOẠN ĐỀ TỰ ĐỘNG</h4>
+                    <p style="font-size: 15px; margin: 0 0 12px 0; line-height: 1.5; color: #e8eaed;">Bạn lười gõ từng câu? Hãy dùng Trợ lý AI đã được thiết lập sẵn luật của chúng tôi:</p>
+                    <ol style="font-size: 14px; margin: 0 0 20px 0; padding-left: 20px; line-height: 1.5; color: #e8eaed;">
+                        <li>Bấm vào nút mở AI màu xanh bên dưới.</li>
+                        <li>Ở dưới cùng trang AI, bấm nút <b>"Tiếp tục đoạn trò chuyện"</b>.</li>
+                        <li>Yêu cầu AI soạn câu hỏi. Sau đó Copy toàn bộ kết quả của nó.</li>
+                        <li>Quay lại trang này và Dán vào ô đen bên dưới là xong!</li>
+                    </ol>
+                    <a href="https://share.gemini.google/r4X7xxQ2py45" target="_blank" style="display: inline-block; background: #8ab4f8; color: #202124; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 6px; font-size: 16px; text-align: center;">👉 MỞ TRỢ LÝ AI TẠI ĐÂY</a>
+                </div>
+
+                <div style="margin-bottom: 12px; background: #3c4043; padding: 12px; border-radius: 6px; border-left: 4px solid #fbbc04;">
+                    <p style="font-size: 14px; color: #fbbc04; margin: 0; line-height: 1.5; font-weight: bold;">
+                        👀 BẢNG XEM TRƯỚC MẪU ĐỊNH DẠNG CỦA AI:
+                    </p>
+                    <p style="font-size: 13px; color: #e8eaed; margin: 5px 0 0 0;">
+                        <i>(Mẹo: Hãy <b>chọn "Loại câu hỏi"</b> ở ô lựa chọn bên dưới để thay đổi mẫu xem trước ở đây)</i>
+                    </p>
+                </div>
                 
                 <!-- 3 Bảng hướng dẫn động -->
                 <div id="bulk-hint-trac-nghiem">
@@ -61,15 +93,15 @@ Nghiệm là bao nhiêu?
 Đáp án: x = 3</pre>
                 </div>
 
-                <textarea id="bulk-input" class="input-box" rows="8" placeholder="Dán văn bản có chứa câu hỏi vào đây..." style="margin-top: 15px;"></textarea>
-                <button id="btn-bulk-add" class="btn-blue" style="background: #fbbc04; color: #202124;">⚡ Xử lý và Thêm hàng loạt</button>
+                <textarea id="bulk-input" class="input-box" rows="8" placeholder="👉 Sau khi copy từ AI, hãy dán toàn bộ văn bản vào đây..." style="margin-top: 15px; border-color: #fbbc04;"></textarea>
+                <button id="btn-bulk-add" class="btn-blue" style="background: #fbbc04; color: #202124;">⚡ XỬ LÝ VÀ THÊM VÀO ĐỀ THI</button>
             </div>
         </div>
 
         <input type="text" id="quiz-title" class="input-box" placeholder="Nhập tên Đề thi (VD: Kiểm tra 15p Toán Hình)...">
         
         <!-- NHẬP THỦ CÔNG & CHUYỂN ĐỔI GIAO DIỆN -->
-        <select id="question-type" class="input-box" style="margin-bottom: 20px;">
+        <select id="question-type" class="input-box" style="margin-bottom: 20px; font-weight: bold; font-size: 16px;">
             <option value="trac-nghiem">Trắc nghiệm 1 đáp án</option>
             <option value="dung-sai">Trắc nghiệm Đúng/Sai</option>
             <option value="tra-loi-ngan">Câu hỏi Trả lời ngắn</option>
@@ -115,6 +147,6 @@ Nghiệm là bao nhiêu?
         <button onclick="location.reload()" style="margin-top: 20px; width: 100%; background: #5f6368; padding: 12px; border-radius: 8px; color: white; border: none; font-size: 16px; cursor: pointer;">Tạo bài tập khác</button>
     </div>
 
-    <script type="module" src="script.js?v=18"></script>
+    <script type="module" src="script.js?v=19"></script>
 </body>
 </html>
