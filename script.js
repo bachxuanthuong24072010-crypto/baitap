@@ -34,7 +34,7 @@ if (quizId) {
 }
 
 // ----------------------------------------------------
-// TÍNH NĂNG MỚI: NHẬP NHANH TỪ VĂN BẢN
+// LÕI PHÂN TÍCH NHẬP NHANH (NÂNG CẤP HỖ TRỢ 3 LOẠI)
 // ----------------------------------------------------
 const toggleBulk = document.getElementById('toggle-bulk');
 if (toggleBulk) {
@@ -60,64 +60,99 @@ if (btnBulkAdd) {
         let addedCount = 0;
         
         function saveParsedQ(q) {
-            const cIndex = q.ansKey.charCodeAt(0) - 65; // A=0, B=1, C=2, D=3
-            window.danhSachCauHoi.push({
-                type: "trac-nghiem", question: q.question,
-                options: [
-                    { text: q.options[0], isCorrect: cIndex === 0 },
-                    { text: q.options[1], isCorrect: cIndex === 1 },
-                    { text: q.options[2], isCorrect: cIndex === 2 },
-                    { text: q.options[3], isCorrect: cIndex === 3 }
-                ]
-            });
+            // NẾU CÓ 4 LỰA CHỌN A B C D
+            if (q.options.length === 4) {
+                let rawAns = q.ansKey.toUpperCase().replace(/\s+/g, '');
+                // Kiểm tra nếu đáp án chỉ là 1 chữ cái A, B, C, D (Trắc nghiệm 1 đáp án)
+                if (rawAns === 'A' || rawAns === 'B' || rawAns === 'C' || rawAns === 'D') {
+                    const cIndex = rawAns.charCodeAt(0) - 65;
+                    window.danhSachCauHoi.push({
+                        type: "trac-nghiem", question: q.question,
+                        options: [
+                            { text: q.options[0], isCorrect: cIndex === 0 },
+                            { text: q.options[1], isCorrect: cIndex === 1 },
+                            { text: q.options[2], isCorrect: cIndex === 2 },
+                            { text: q.options[3], isCorrect: cIndex === 3 }
+                        ]
+                    });
+                } else {
+                    // Nếu đáp án có nhiều chữ (VD: Đ, S, Đ, S) -> Đúng/Sai
+                    let boolValues = [];
+                    let parts = q.ansKey.toUpperCase().split(/[,;.\-]/);
+                    if (parts.length >= 4) {
+                        parts.forEach(p => boolValues.push(p.includes('Đ') || p.includes('T')));
+                    } else {
+                        // Quét từng ký tự một
+                        for(let char of q.ansKey.toUpperCase()) {
+                            if (char === 'Đ') boolValues.push(true);
+                            if (char === 'S') boolValues.push(false);
+                        }
+                    }
+                    while(boolValues.length < 4) boolValues.push(false); // Chống lỗi
+
+                    window.danhSachCauHoi.push({
+                        type: "dung-sai", question: q.question,
+                        statements: [
+                            { text: q.options[0], isTrue: boolValues[0] },
+                            { text: q.options[1], isTrue: boolValues[1] },
+                            { text: q.options[2], isTrue: boolValues[2] },
+                            { text: q.options[3], isTrue: boolValues[3] }
+                        ]
+                    });
+                }
+            } 
+            // NẾU KHÔNG CÓ A B C D (Trả lời ngắn)
+            else if (q.options.length === 0) {
+                window.danhSachCauHoi.push({
+                    type: "tra-loi-ngan", question: q.question, answerKey: q.ansKey
+                });
+            }
         }
 
         for(let i=0; i < lines.length; i++) {
             let line = lines[i];
             
-            // Tìm thấy từ bắt đầu bằng "Câu X:" hoặc "Bài X:"
+            // Dòng bắt đầu câu hỏi mới
             if (line.match(/^(Câu|Bài)\s*\d+:/i) || (!line.match(/^[A-D]\./i) && !line.match(/^Đáp án:/i) && !currentQ)) {
-                if (currentQ && currentQ.options.length === 4 && currentQ.ansKey) {
+                if (currentQ && currentQ.ansKey) {
                     saveParsedQ(currentQ); addedCount++;
                 }
                 currentQ = { question: line.replace(/^(Câu|Bài)\s*\d+:\s*/i, ''), options: [], ansKey: null };
             } 
-            // Bắt đầu bằng A., B., C., D.
+            // Dòng tùy chọn A. B. C. D.
             else if (line.match(/^[A-D]\./i) && currentQ) {
                 currentQ.options.push(line.replace(/^[A-D]\.\s*/i, '').trim());
             } 
-            // Bắt đầu bằng chữ "Đáp án: A"
-            else if (line.match(/^Đáp án:\s*[A-D]/i) && currentQ) {
-                currentQ.ansKey = line.match(/^Đáp án:\s*([A-D])/i)[1].toUpperCase();
-                if (currentQ.options.length === 4) {
-                    saveParsedQ(currentQ); addedCount++;
-                    currentQ = null; // Reset để nhận câu mới
-                }
+            // Dòng chốt đáp án
+            else if (line.match(/^Đáp án:/i) && currentQ) {
+                currentQ.ansKey = line.replace(/^Đáp án:\s*/i, '').trim();
+                saveParsedQ(currentQ); addedCount++;
+                currentQ = null;
             } 
-            // Nếu câu hỏi dài nhiều dòng thì nối thêm vào
-            else if (currentQ && currentQ.options.length === 0) {
+            // Nối thêm dòng nếu câu hỏi dài nhiều đoạn
+            else if (currentQ && currentQ.options.length === 0 && !currentQ.ansKey) {
                 currentQ.question += '\n' + line; 
             }
         }
-        // Lưu câu cuối cùng
-        if (currentQ && currentQ.options.length === 4 && currentQ.ansKey) {
+        // Lưu câu cuối
+        if (currentQ && currentQ.ansKey) {
             saveParsedQ(currentQ); addedCount++;
         }
 
         if (addedCount > 0) {
-            alert(`🎉 Thành công! Đã tự động thêm ${addedCount} câu hỏi trắc nghiệm!`);
-            document.getElementById('bulk-input').value = ''; // Xóa trắng ô để dán cái khác
+            alert(`🎉 Thành công! Đã tự động phân tích và thêm ${addedCount} câu hỏi!`);
+            document.getElementById('bulk-input').value = ''; 
             renderPreview();
-            // Tự động thu gọn bảng
             document.getElementById('bulk-area').style.display = 'none';
             document.getElementById('bulk-icon').innerText = '▼';
         } else {
-            alert("❌ Không tìm thấy câu hỏi nào! Hãy chắc chắn văn bản của bạn có đúng 4 dòng A. B. C. D. và dòng chữ 'Đáp án: A' ở cuối mỗi câu nhé.");
+            alert("❌ Không tìm thấy câu hỏi hợp lệ. Bạn nhớ ghi chữ 'Đáp án: ...' ở cuối mỗi câu nhé!");
         }
     });
 }
 // ----------------------------------------------------
 
+// [Phần còn lại giữ nguyên]
 const questionType = document.getElementById('question-type');
 if (questionType) {
     function updateFormDisplay() {
@@ -181,7 +216,7 @@ function renderPreview() {
     window.danhSachCauHoi.forEach((cau, i) => {
         html += `<div style="border-left: 4px solid #8ab4f8; background: #202124; padding: 15px; margin-top: 15px; border-radius: 8px;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <strong style="color:#8ab4f8">Câu ${i + 1}:</strong>
+                        <strong style="color:#8ab4f8">Câu ${i + 1}: (${cau.type})</strong>
                         <button onclick="window.danhSachCauHoi.splice(${i}, 1); renderPreview();" style="width:auto; padding:4px 8px; background:#f44336; color:white; font-size:12px; margin:0; border:none; border-radius:4px; cursor:pointer;">Xóa câu này</button>
                     </div>
                     <textarea onchange="window.danhSachCauHoi[${i}].question = this.value" style="width:100%; margin-bottom:10px; background:#303134; color:white; border:1px solid #5f6368; padding:8px;">${cau.question}</textarea>`;
