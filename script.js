@@ -134,20 +134,39 @@ window.renderPreview = renderPreview;
 document.getElementById('btn-save').addEventListener('click', async () => {
     if (window.danhSachCauHoi.length === 0) return alert("Chưa có câu hỏi nào để tạo link!");
     
-    // Lấy tên đề thi, nếu trống thì để mặc định
     let titleInput = document.getElementById('quiz-title').value.trim();
     if (!titleInput) titleInput = "Bài Tập Tổng Hợp";
 
     const saveBtn = document.getElementById('btn-save');
-    saveBtn.innerText = "Đang tạo link..."; saveBtn.disabled = true;
+    saveBtn.innerText = "Đang tạo đề thi lên Đám mây..."; saveBtn.disabled = true;
     try {
         const docRef = await addDoc(collection(db, "quizzes"), { 
             title: titleInput,
             danhSach: window.danhSachCauHoi,
             leaderboard: [] 
         });
-        const link = `${window.location.origin + window.location.pathname}?id=${docRef.id}`;
-        document.getElementById('link-result').innerHTML = `<b>Link bài tập:</b><br><a href="${link}" style="color:#8ab4f8; word-break: break-all;" target="_blank">${link}</a>`;
+        
+        // Rút gọn link
+        saveBtn.innerText = "Đang nén Link cho ngắn lại...";
+        const longLink = `${window.location.origin + window.location.pathname}?id=${docRef.id}`;
+        let finalLink = longLink;
+        
+        try {
+            const shortResponse = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longLink)}`);
+            if (shortResponse.ok) {
+                finalLink = await shortResponse.text();
+            }
+        } catch (e) {
+            console.log("Không thể rút gọn link, dùng link gốc");
+        }
+
+        document.getElementById('link-result').innerHTML = `
+            <div style="background: #e8f0fe; color: #1a73e8; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                <b style="font-size: 16px;">✨ Link bài tập của bạn đã sẵn sàng:</b><br><br>
+                <a href="${finalLink}" style="font-size: 20px; font-weight: bold; text-decoration: underline;" target="_blank">${finalLink}</a>
+                <p style="margin-top: 10px; font-size: 13px; color: #5f6368;">(Hãy copy link ngắn này để gửi cho học sinh nhé)</p>
+            </div>
+        `;
     } catch (error) { alert("Lỗi kết nối: " + error.message); } 
     finally { saveBtn.innerText = "Lưu đề thi và tạo Link"; saveBtn.disabled = false; }
 });
@@ -160,7 +179,6 @@ async function loadQuiz(id) {
             quizDataGlobal = data.danhSach;
             quizTitleGlobal = data.title || "Bài Tập Trắc Nghiệm";
             
-            // THAY ĐỔI TIÊU ĐỀ TRÌNH DUYỆT THEO TÊN ĐỀ THI
             document.title = quizTitleGlobal;
 
             currentQuestionIndex = 0;
@@ -321,7 +339,6 @@ function renderCurrentQuestion() {
     });
 }
 
-// HÀM HIỂN THỊ BẢNG SỐ LIỆU THỐNG KÊ MỚI
 async function showLeaderboard(id) {
     document.getElementById('quiz-panel').style.display = 'none';
     document.getElementById('leaderboard-panel').style.display = 'block';
@@ -338,7 +355,7 @@ async function showLeaderboard(id) {
         
         let html = `
         <div class="card" style="border: 1px solid #5f6368; padding: 20px;">
-            <h2 style="text-align: center; color: #8ab4f8; margin-bottom: 10px;">BẢNG TỔNG HỢP KẾT QUẢ</h2>
+            <h2 style="text-align: center; color: #8ab4f8; margin-bottom: 10px;">BẢNG THỐNG KÊ KẾT QUẢ</h2>
             <h3 style="text-align: center; color: #e8eaed; margin-bottom: 25px; font-weight: normal;">Đề thi: ${data.title}</h3>
             
             <table style="width: 100%; border-collapse: collapse; color: white; border: 1px solid #5f6368;">
@@ -371,9 +388,7 @@ async function showLeaderboard(id) {
     }
 }
 
-// ==========================================
-// TÍNH NĂNG CHATBOT AI AGENT GIỮ NGUYÊN
-// ==========================================
+// AI CHATBOT BẢN 2.5 (KHÔNG BAO GIỜ HẾT LƯỢT HỎI)
 const chatInput = document.getElementById('chat-input');
 const btnChatSend = document.getElementById('btn-chat-send');
 const chatHistoryBox = document.getElementById('chat-history');
@@ -441,7 +456,8 @@ if (btnChatSend) {
         conversationContext.push({ "role": "user", "parts": [{ "text": userText }] });
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
+            // ĐÃ CHUYỂN SANG 2.5 FLASH Ở ĐÂY ĐỂ TRÁNH LỖI QUOTA
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
                 method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: conversationContext, tools: aiTools })
             });
             const data = await response.json(); if (data.error) throw new Error(data.error.message); 
