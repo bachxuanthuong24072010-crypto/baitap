@@ -260,7 +260,7 @@ function renderCurrentQuestion() {
 }
 
 // ==========================================
-// TÍNH NĂNG CHATBOT AI AGENT (ĐÃ ĐỔI SANG MODEL ỔN ĐỊNH LATEST)
+// TÍNH NĂNG CHATBOT AI AGENT (ĐÃ ĐỔI SANG MODEL ỔN ĐỊNH GEMINI-1.5-FLASH)
 // ==========================================
 const chatInput = document.getElementById('chat-input');
 const btnChatSend = document.getElementById('btn-chat-send');
@@ -380,13 +380,13 @@ if (btnChatSend) {
 
         chatInput.value = '';
         appendMessage('user', userText);
-        const loadingMsg = appendMessage('model', '⏳ Đang suy nghĩ...');
+        const loadingMsg = appendMessage('model', '⏳ Đang phân tích...');
 
         conversationContext.push({ "role": "user", "parts": [{ "text": userText }] });
 
         try {
-            // ĐÃ THAY ĐỔI URL CHUẨN SANG gemini-flash-latest ĐỂ HOẠT ĐỘNG SIÊU NHANH VÀ ỔN ĐỊNH
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${MY_GEMINI_API_KEY}`, {
+            // URL MỚI NHẤT DÙNG gemini-1.5-flash VỚI 1.500 LƯỢT HỎI/NGÀY
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
@@ -411,7 +411,7 @@ if (btnChatSend) {
                 if (part.functionCall && part.functionCall.name === "fill_quiz_form") {
                     const success = executeFillForm(part.functionCall.args);
                     if (success) {
-                        appendMessage('model', "🤖 [Hành động]: Em đã hiểu và tự động điền các thông tin vào Form bên dưới thành công! Thầy/cô kiểm tra lại nhé.");
+                        appendMessage('model', "🤖 [Hành động]: Em đã tự động điền các thông tin vào Form bên dưới thành công! Thầy/cô kiểm tra lại nhé.");
                         conversationContext.push({
                             "role": "user",
                             "parts": [{
