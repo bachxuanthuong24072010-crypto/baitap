@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
-import { getFirestore, collection, addDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, doc, getDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAc1N9X4y3G-qCnp2dt3DCkFpa1Kc7Wctc",
@@ -16,6 +16,7 @@ const db = getFirestore(app);
 window.danhSachCauHoi = [];
 let quizDataGlobal = [];
 let currentQuestionIndex = 0;
+let quizTitleGlobal = "Bài Tập Trắc Nghiệm";
 let quizStats = {
     'trac-nghiem': { correct: 0, total: 0 },
     'dung-sai': { details: [], total: 0 },
@@ -132,21 +133,36 @@ window.renderPreview = renderPreview;
 
 document.getElementById('btn-save').addEventListener('click', async () => {
     if (window.danhSachCauHoi.length === 0) return alert("Chưa có câu hỏi nào để tạo link!");
+    
+    // Lấy tên đề thi, nếu trống thì để mặc định
+    let titleInput = document.getElementById('quiz-title').value.trim();
+    if (!titleInput) titleInput = "Bài Tập Tổng Hợp";
+
     const saveBtn = document.getElementById('btn-save');
     saveBtn.innerText = "Đang tạo link..."; saveBtn.disabled = true;
     try {
-        const docRef = await addDoc(collection(db, "quizzes"), { danhSach: window.danhSachCauHoi });
+        const docRef = await addDoc(collection(db, "quizzes"), { 
+            title: titleInput,
+            danhSach: window.danhSachCauHoi,
+            leaderboard: [] 
+        });
         const link = `${window.location.origin + window.location.pathname}?id=${docRef.id}`;
         document.getElementById('link-result').innerHTML = `<b>Link bài tập:</b><br><a href="${link}" style="color:#8ab4f8; word-break: break-all;" target="_blank">${link}</a>`;
     } catch (error) { alert("Lỗi kết nối: " + error.message); } 
-    finally { saveBtn.innerText = "Lưu và tạo Link"; saveBtn.disabled = false; }
+    finally { saveBtn.innerText = "Lưu đề thi và tạo Link"; saveBtn.disabled = false; }
 });
 
 async function loadQuiz(id) {
     try {
         const docSnap = await getDoc(doc(db, "quizzes", id));
         if (docSnap.exists()) {
-            quizDataGlobal = docSnap.data().danhSach;
+            const data = docSnap.data();
+            quizDataGlobal = data.danhSach;
+            quizTitleGlobal = data.title || "Bài Tập Trắc Nghiệm";
+            
+            // THAY ĐỔI TIÊU ĐỀ TRÌNH DUYỆT THEO TÊN ĐỀ THI
+            document.title = quizTitleGlobal;
+
             currentQuestionIndex = 0;
             quizStats = {
                 'trac-nghiem': { correct: 0, total: 0 },
@@ -164,22 +180,67 @@ function renderCurrentQuestion() {
 
     if (currentQuestionIndex >= quizDataGlobal.length) {
         let resultDetails = "";
+        
+        let totalPossible = quizStats['trac-nghiem'].total + quizStats['tra-loi-ngan'].total + quizStats['dung-sai'].total;
+        let earned = quizStats['trac-nghiem'].correct + quizStats['tra-loi-ngan'].correct;
+        
         if (quizStats['trac-nghiem'].total > 0) {
             resultDetails += `<p style="font-size: 16px; margin: 10px 0; border-bottom: 1px solid #5f6368; padding-bottom: 15px;"><strong style="color: white;">Trắc nghiệm:</strong> <span style="color: #4caf50; font-weight: bold;">${quizStats['trac-nghiem'].correct} câu đúng</span> / ${quizStats['trac-nghiem'].total} câu</p>`;
         }
         if (quizStats['dung-sai'].total > 0) {
             let dsText = quizStats['dung-sai'].details.map((detail, idx) => `Câu ${idx + 1}: ${detail.correctCount}/4`).join(' ; '); 
             resultDetails += `<p style="font-size: 16px; margin: 10px 0; border-bottom: 1px solid #5f6368; padding-bottom: 15px;"><strong style="color: white;">Đúng / Sai:</strong> <span style="color: #4caf50; font-weight: bold; margin-left: 8px;">${dsText}</span></p>`;
+            quizStats['dung-sai'].details.forEach(d => { earned += d.correctCount / 4; });
         }
         if (quizStats['tra-loi-ngan'].total > 0) {
             resultDetails += `<p style="font-size: 16px; margin: 10px 0;"><strong style="color: white;">Trả lời ngắn:</strong> <span style="color: #4caf50; font-weight: bold;">${quizStats['tra-loi-ngan'].correct} câu đúng</span> / ${quizStats['tra-loi-ngan'].total} câu</p>`;
         }
-        container.innerHTML = `<div class="card" style="border-left: 4px solid #8ab4f8;"><h2 style="text-align: center; margin-bottom: 20px;">📊 Phân tích bài làm</h2><div style="background: #202124; padding: 15px; border-radius: 8px; text-align: left;">${resultDetails}</div></div>`;
+
+        let score10 = totalPossible > 0 ? ((earned / totalPossible) * 10).toFixed(2) : 0;
+
+        container.innerHTML = `
+            <h1 style="text-align: center; color: #8ab4f8; margin-bottom: 20px;">${quizTitleGlobal}</h1>
+            <div class="card" style="border-left: 4px solid #8ab4f8;">
+                <h2 style="text-align: center; margin-bottom: 20px;">📊 Phân tích bài làm</h2>
+                <div style="background: #202124; padding: 15px; border-radius: 8px; text-align: left;">${resultDetails}</div>
+                <h2 style="text-align: center; color: #fbbc04; margin-top: 20px; font-size: 28px;">Tổng điểm: ${score10} / 10</h2>
+                
+                <div style="margin-top: 30px; text-align: center; background: #303134; padding: 20px; border-radius: 8px;">
+                    <p style="margin-top: 0; color: #e8eaed;">Lưu kết quả của bạn vào Bảng Thống Kê</p>
+                    <input type="text" id="student-name" placeholder="Nhập Họ Tên / Lớp của bạn..." style="padding: 12px; width: 90%; border-radius: 8px; margin-bottom: 15px; font-size: 16px;">
+                    <br>
+                    <button id="btn-save-score" style="background: #4caf50; color: white; padding: 12px 25px; font-size: 16px; border-radius: 8px;">Lưu & Xem Thống Kê</button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('btn-save-score').addEventListener('click', async () => {
+            const stuName = document.getElementById('student-name').value.trim();
+            if(!stuName) return alert("Vui lòng nhập tên của bạn!");
+            
+            const btn = document.getElementById('btn-save-score');
+            btn.innerText = "Đang lưu..."; btn.disabled = true;
+            
+            try {
+                await updateDoc(doc(db, "quizzes", quizId), {
+                    leaderboard: arrayUnion({
+                        name: stuName,
+                        score: parseFloat(score10),
+                        timestamp: new Date().toISOString()
+                    })
+                });
+                showLeaderboard(quizId);
+            } catch(e) {
+                alert("Lỗi khi lưu điểm: " + e.message);
+                btn.innerText = "Thử lại"; btn.disabled = false;
+            }
+        });
         return;
     }
 
     const cauHoi = quizDataGlobal[currentQuestionIndex];
-    let html = `<div class="card" style="margin-top: 20px; border-left: 4px solid #8ab4f8;"><strong>Câu ${currentQuestionIndex + 1} / ${quizDataGlobal.length}:</strong> ${cauHoi.question}</div>`;
+    let html = `<h2 style="text-align: center; color: #8ab4f8; margin-bottom: 20px;">${quizTitleGlobal}</h2>`;
+    html += `<div class="card" style="border-left: 4px solid #8ab4f8;"><strong>Câu ${currentQuestionIndex + 1} / ${quizDataGlobal.length}:</strong> ${cauHoi.question}</div>`;
     
     if (cauHoi.type === 'trac-nghiem') {
         cauHoi.options.forEach((opt, i) => {
@@ -260,52 +321,88 @@ function renderCurrentQuestion() {
     });
 }
 
+// HÀM HIỂN THỊ BẢNG SỐ LIỆU THỐNG KÊ MỚI
+async function showLeaderboard(id) {
+    document.getElementById('quiz-panel').style.display = 'none';
+    document.getElementById('leaderboard-panel').style.display = 'block';
+    
+    const lbContent = document.getElementById('leaderboard-content');
+    lbContent.innerHTML = "<h2 style='text-align:center;'>Đang tải dữ liệu...</h2>";
+    
+    try {
+        const docSnap = await getDoc(doc(db, "quizzes", id));
+        const data = docSnap.data();
+        let lb = data.leaderboard || [];
+        
+        lb.sort((a, b) => b.score - a.score || new Date(a.timestamp) - new Date(b.timestamp));
+        
+        let html = `
+        <div class="card" style="border: 1px solid #5f6368; padding: 20px;">
+            <h2 style="text-align: center; color: #8ab4f8; margin-bottom: 10px;">BẢNG TỔNG HỢP KẾT QUẢ</h2>
+            <h3 style="text-align: center; color: #e8eaed; margin-bottom: 25px; font-weight: normal;">Đề thi: ${data.title}</h3>
+            
+            <table style="width: 100%; border-collapse: collapse; color: white; border: 1px solid #5f6368;">
+                <thead>
+                    <tr style="background: #303134;">
+                        <th style="padding: 12px; border: 1px solid #5f6368; width: 15%; text-align: center;">STT</th>
+                        <th style="padding: 12px; border: 1px solid #5f6368; text-align: left;">Họ và Tên học sinh</th>
+                        <th style="padding: 12px; border: 1px solid #5f6368; width: 25%; text-align: center;">Điểm số</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+                
+        lb.forEach((entry, i) => {
+            html += `
+                <tr style="background: ${i % 2 === 0 ? 'transparent' : '#2a2b2f'};">
+                    <td style="padding: 10px; border: 1px solid #5f6368; text-align: center;">${i + 1}</td>
+                    <td style="padding: 10px; border: 1px solid #5f6368;">${entry.name}</td>
+                    <td style="padding: 10px; border: 1px solid #5f6368; text-align: center; font-weight: bold; color: #8ab4f8;">${entry.score}</td>
+                </tr>`;
+        });
+
+        if (lb.length === 0) {
+            html += `<tr><td colspan="3" style="padding: 15px; text-align: center; border: 1px solid #5f6368;">Chưa có học sinh nào nộp bài.</td></tr>`;
+        }
+        
+        html += `</tbody></table></div>`;
+        lbContent.innerHTML = html;
+    } catch(e) {
+        lbContent.innerHTML = "Lỗi tải dữ liệu: " + e.message;
+    }
+}
+
 // ==========================================
-// TÍNH NĂNG CHATBOT AI AGENT (GEMINI 3.5 FLASH + TỰ ĐỘNG THÊM LIÊN HOÀN)
+// TÍNH NĂNG CHATBOT AI AGENT GIỮ NGUYÊN
 // ==========================================
 const chatInput = document.getElementById('chat-input');
 const btnChatSend = document.getElementById('btn-chat-send');
 const chatHistoryBox = document.getElementById('chat-history');
-
-const _p1 = "AQ.Ab8RN6KATwc";
-const _p2 = "iao_L06TOdHldaO";
-const _p3 = "6YSeZdYx5QB3f3RRFMHpZE2A";
+const _p1 = "AQ.Ab8RN6KATwc"; const _p2 = "iao_L06TOdHldaO"; const _p3 = "6YSeZdYx5QB3f3RRFMHpZE2A";
 const MY_GEMINI_API_KEY = _p1 + _p2 + _p3;
 const thoiGianHienTai = new Date().toLocaleString('vi-VN');
 
 let conversationContext = [
     {
         "role": "user",
-        // Đã cập nhật lệnh: ÉP AI TẠO NHIỀU CÂU HỎI CÙNG LÚC NẾU YÊU CẦU
         "parts": [{ "text": `Bạn là AI Agent giáo dục. Thông tin hệ thống: Hôm nay là ${thoiGianHienTai}. Bạn có khả năng chat bình thường và có quyền Gọi Hàm (Function Calling) để điền form. 
 LƯU Ý CỰC KỲ QUAN TRỌNG: 
 1. Bất cứ khi nào người dùng yêu cầu tạo câu hỏi, bạn PHẢI GỌI HÀM fill_quiz_form. 
 2. Nếu người dùng yêu cầu tạo NHIỀU câu hỏi (Ví dụ: tạo 3 câu, 5 câu), bạn BẮT BUỘC PHẢI GỌI HÀM fill_quiz_form NHIỀU LẦN LIÊN TỤC trong cùng một lượt trả lời (mỗi câu hỏi tương ứng với 1 lần gọi hàm).
 3. Mọi công thức Toán, Lý, Hóa trong đề bài và đáp án phải được dịch sang LaTeX và bọc trong cặp dấu $$...$$.` }]
     },
-    {
-        "role": "model",
-        "parts": [{ "text": "Đã rõ lệnh! Em có thể gọi hàm liên tục để tạo ra bao nhiêu câu hỏi tùy ý Thầy/Cô ạ." }]
-    }
+    { "role": "model", "parts": [{ "text": "Đã rõ lệnh! Em có thể gọi hàm liên tục để tạo ra bao nhiêu câu hỏi tùy ý Thầy/Cô ạ." }] }
 ];
 
 const aiTools = [{
     functionDeclarations: [{
-        name: "fill_quiz_form",
-        description: "Gọi hàm này ĐỂ TỰ ĐỘNG ĐIỀN câu hỏi và đáp án vào form. Có thể gọi hàm này nhiều lần liên tiếp để tạo nhiều câu hỏi.",
+        name: "fill_quiz_form", description: "Gọi hàm này ĐỂ TỰ ĐỘNG ĐIỀN câu hỏi và đáp án vào form.",
         parameters: {
             type: "OBJECT",
             properties: {
-                type: { type: "STRING", description: "BẮT BUỘC: 'trac-nghiem' (Trắc nghiệm), 'dung-sai' (Đúng/Sai), 'tra-loi-ngan' (Trả lời ngắn)" },
-                question: { type: "STRING", description: "Đề bài (Bắt buộc phải dịch chữ Toán học sang LaTeX $$...$$)" },
-                options: { type: "ARRAY", items: { type: "STRING" }, description: "4 đáp án A, B, C, D (Chỉ dùng cho câu trắc-nghiệm)" },
-                correctIndex: { type: "INTEGER", description: "Vị trí đáp án đúng (0,1,2,3) (Chỉ dùng cho câu trắc-nghiệm)" },
-                statements: {
-                    type: "ARRAY",
-                    items: { type: "OBJECT", properties: { text: { type: "STRING" }, isTrue: { type: "BOOLEAN" } } },
-                    description: "Mảng 4 phát biểu (Chỉ dùng cho câu dung-sai)"
-                },
-                answerKey: { type: "STRING", description: "Đáp án ngắn (Chỉ dùng cho câu tra-loi-ngan)" }
+                type: { type: "STRING" }, question: { type: "STRING" }, options: { type: "ARRAY", items: { type: "STRING" } },
+                correctIndex: { type: "INTEGER" },
+                statements: { type: "ARRAY", items: { type: "OBJECT", properties: { text: { type: "STRING" }, isTrue: { type: "BOOLEAN" } } } },
+                answerKey: { type: "STRING" }
             },
             required: ["type", "question"]
         }
@@ -315,147 +412,58 @@ const aiTools = [{
 function appendMessage(sender, text) {
     if (!chatHistoryBox) return null;
     const msgDiv = document.createElement('div');
-    msgDiv.style.padding = '10px 15px';
-    msgDiv.style.borderRadius = '15px';
-    msgDiv.style.maxWidth = '85%';
-    msgDiv.style.fontSize = '15px';
-    msgDiv.style.lineHeight = '1.4';
-    msgDiv.style.whiteSpace = 'pre-wrap';
-    msgDiv.style.marginBottom = '15px';
-
-    if (sender === 'user') {
-        msgDiv.style.background = '#8ab4f8';
-        msgDiv.style.color = '#202124';
-        msgDiv.style.borderTopRightRadius = '0';
-        msgDiv.style.alignSelf = 'flex-end';
-    } else {
-        msgDiv.style.background = '#3c4043';
-        msgDiv.style.color = 'white';
-        msgDiv.style.borderTopLeftRadius = '0';
-        msgDiv.style.alignSelf = 'flex-start';
-    }
-    
-    msgDiv.innerText = text;
-    chatHistoryBox.appendChild(msgDiv);
-    chatHistoryBox.scrollTop = chatHistoryBox.scrollHeight;
-    
-    if (typeof renderMathInElement === "function") {
-        renderMathInElement(msgDiv, { delimiters: [{left: "$$", right: "$$", display: false}] });
-    }
+    msgDiv.style.padding = '10px 15px'; msgDiv.style.borderRadius = '15px'; msgDiv.style.maxWidth = '85%'; msgDiv.style.fontSize = '15px'; msgDiv.style.lineHeight = '1.4'; msgDiv.style.whiteSpace = 'pre-wrap'; msgDiv.style.marginBottom = '15px';
+    if (sender === 'user') { msgDiv.style.background = '#8ab4f8'; msgDiv.style.color = '#202124'; msgDiv.style.borderTopRightRadius = '0'; msgDiv.style.alignSelf = 'flex-end';
+    } else { msgDiv.style.background = '#3c4043'; msgDiv.style.color = 'white'; msgDiv.style.borderTopLeftRadius = '0'; msgDiv.style.alignSelf = 'flex-start'; }
+    msgDiv.innerText = text; chatHistoryBox.appendChild(msgDiv); chatHistoryBox.scrollTop = chatHistoryBox.scrollHeight;
+    if (typeof renderMathInElement === "function") renderMathInElement(msgDiv, { delimiters: [{left: "$$", right: "$$", display: false}] });
     return msgDiv;
 }
 
 function executeFillForm(args) {
     try {
-        document.getElementById('question-type').value = args.type;
-        document.getElementById('question-type').dispatchEvent(new Event('change')); 
-        
-        document.getElementById('question').value = args.question || '';
-
+        document.getElementById('question-type').value = args.type; document.getElementById('question-type').dispatchEvent(new Event('change')); document.getElementById('question').value = args.question || '';
         if (args.type === 'trac-nghiem' && args.options) {
-            document.getElementById('opt-a').value = args.options[0] || '';
-            document.getElementById('opt-b').value = args.options[1] || '';
-            document.getElementById('opt-c').value = args.options[2] || '';
-            document.getElementById('opt-d').value = args.options[3] || '';
-            const radios = document.querySelectorAll('input[name="correct-answer"]');
-            radios.forEach(r => r.checked = false);
-            if(args.correctIndex !== undefined && radios[args.correctIndex]) {
-                radios[args.correctIndex].checked = true;
-            }
+            ['a','b','c','d'].forEach((id, idx) => document.getElementById(`opt-${id}`).value = args.options[idx] || '');
+            const radios = document.querySelectorAll('input[name="correct-answer"]'); radios.forEach(r => r.checked = false);
+            if(args.correctIndex !== undefined && radios[args.correctIndex]) radios[args.correctIndex].checked = true;
         } else if (args.type === 'dung-sai' && args.statements) {
-            const ids = ['a', 'b', 'c', 'd'];
-            args.statements.forEach((stmt, i) => {
-                if (i < 4) {
-                    document.getElementById(`ds-opt-${ids[i]}`).value = stmt.text || '';
-                    document.getElementById(`ds-ans-${ids[i]}`).checked = stmt.isTrue || false;
-                }
-            });
-        } else if (args.type === 'tra-loi-ngan') {
-            document.getElementById('answer-key').value = args.answerKey || '';
-        }
+            ['a','b','c','d'].forEach((id, i) => { if (i < 4) { document.getElementById(`ds-opt-${id}`).value = args.statements[i].text || ''; document.getElementById(`ds-ans-${id}`).checked = args.statements[i].isTrue || false; } });
+        } else if (args.type === 'tra-loi-ngan') document.getElementById('answer-key').value = args.answerKey || '';
         return true;
-    } catch (e) {
-        console.error("Lỗi khi điền form:", e);
-        return false;
-    }
+    } catch (e) { return false; }
 }
 
 if (btnChatSend) {
     btnChatSend.addEventListener('click', async () => {
-        const userText = chatInput.value.trim();
-        if (!userText) return;
-
-        chatInput.value = '';
-        appendMessage('user', userText);
+        const userText = chatInput.value.trim(); if (!userText) return; chatInput.value = ''; appendMessage('user', userText);
         const loadingMsg = appendMessage('model', '⏳ Đang phân tích...');
-
         conversationContext.push({ "role": "user", "parts": [{ "text": userText }] });
 
         try {
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    contents: conversationContext,
-                    tools: aiTools 
-                })
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: conversationContext, tools: aiTools })
             });
-
-            const data = await response.json();
-            if (data.error) throw new Error(data.error.message); 
-
+            const data = await response.json(); if (data.error) throw new Error(data.error.message); 
             loadingMsg.remove();
             
-            const message = data.candidates[0].content;
-            conversationContext.push(message);
+            const message = data.candidates[0].content; conversationContext.push(message);
+            let addedCount = 0; let functionResponses = [];
 
-            let addedCount = 0;
-            let functionResponses = [];
-
-            // Đọc qua tất cả các hành động mà AI trả về
             for (let part of message.parts) {
-                if (part.text) {
-                    appendMessage('model', part.text);
-                }
-                
+                if (part.text) appendMessage('model', part.text);
                 if (part.functionCall && part.functionCall.name === "fill_quiz_form") {
-                    // 1. Điền vào Form
-                    const success = executeFillForm(part.functionCall.args);
-                    if (success) {
-                        // 2. TỰ ĐỘNG BẤM NÚT THÊM
-                        document.getElementById('btn-add').click();
-                        addedCount++;
-                        
-                        functionResponses.push({
-                            "functionResponse": {
-                                "name": "fill_quiz_form",
-                                "response": { "result": "Thành công" }
-                            }
-                        });
+                    if (executeFillForm(part.functionCall.args)) {
+                        document.getElementById('btn-add').click(); addedCount++;
+                        functionResponses.push({ "functionResponse": { "name": "fill_quiz_form", "response": { "result": "Thành công" } } });
                     }
                 }
             }
-
-            // Ghi nhận phản hồi cho AI biết là đã chạy hàm xong
             if (functionResponses.length > 0) {
-                conversationContext.push({
-                    "role": "user",
-                    "parts": functionResponses
-                });
-                appendMessage('model', `🤖 [Hành động]: Em đã tự động tạo và TỰ ĐỘNG THÊM ${addedCount} câu hỏi vào Danh Sách bên dưới. Thầy/Cô lăn chuột xuống để rà soát nhé!`);
+                conversationContext.push({ "role": "user", "parts": functionResponses });
+                appendMessage('model', `🤖 [Hành động]: Đã tạo và tự động thêm ${addedCount} câu hỏi vào Danh Sách bên dưới!`);
             }
-
-        } catch (error) {
-            console.error(error);
-            loadingMsg.innerText = "❌ Có lỗi xảy ra: " + error.message;
-            conversationContext.pop(); 
-        }
+        } catch (error) { loadingMsg.innerText = "❌ Có lỗi xảy ra: " + error.message; conversationContext.pop(); }
     });
-    
-    chatInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            btnChatSend.click();
-        }
-    });
+    chatInput.addEventListener('keypress', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); btnChatSend.click(); } });
 }
