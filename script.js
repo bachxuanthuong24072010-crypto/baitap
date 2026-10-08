@@ -52,8 +52,11 @@ if (toggleBulk) {
 const btnBulkAdd = document.getElementById('btn-bulk-add');
 if (btnBulkAdd) {
     btnBulkAdd.addEventListener('click', () => {
-        const text = document.getElementById('bulk-input').value.trim();
-        if (!text) return alert("Vui lòng dán văn bản câu hỏi vào ô nhé!");
+        let textRaw = document.getElementById('bulk-input').value.trim();
+        if (!textRaw) return alert("Vui lòng dán văn bản câu hỏi vào ô nhé!");
+
+        // 🌟 BỘ LỌC KHỬ DÍNH CHỮ: Tự động ngắt dòng trước Câu, A, B, C, D, Đáp án
+        let text = textRaw.replace(/([^\n])(Câu\s*\d+:|Bài\s*\d+:|A\.|B\.|C\.|D\.|Đáp án:)/gi, '$1\n$2');
 
         const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
         let currentQ = null;
@@ -130,13 +133,13 @@ if (btnBulkAdd) {
         }
 
         if (addedCount > 0) {
-            alert(`🎉 Thành công! Đã tự động phân tích và thêm ${addedCount} câu hỏi!`);
+            alert(`🎉 Thành công! Đã bóc tách và thêm ${addedCount} câu hỏi!`);
             document.getElementById('bulk-input').value = ''; 
             renderPreview();
             document.getElementById('bulk-area').style.display = 'none';
             document.getElementById('bulk-icon').innerText = '▼';
         } else {
-            alert("❌ Không tìm thấy câu hỏi hợp lệ. Bạn nhớ ghi chữ 'Đáp án: ...' ở cuối mỗi câu nhé!");
+            alert("❌ Không tìm thấy câu hỏi hợp lệ. Bạn nhớ kiểm tra chữ 'Đáp án: ...' nhé!");
         }
     });
 }
@@ -147,8 +150,6 @@ const questionType = document.getElementById('question-type');
 if (questionType) {
     function updateFormDisplay() {
         const type = questionType.value;
-        
-        // 1. Chỉnh Form Thủ công
         const gNghiem = document.getElementById('trac-nghiem-group');
         const gSai = document.getElementById('dung-sai-group');
         const gLoi = document.getElementById('tra-loi-ngan-group');
@@ -157,7 +158,6 @@ if (questionType) {
         if(gSai) gSai.style.display = (type === 'dung-sai') ? 'block' : 'none';
         if(gLoi) gLoi.style.display = (type === 'tra-loi-ngan') ? 'block' : 'none';
         
-        // 2. Chỉnh bảng Hướng dẫn Nhập Nhanh
         const hNghiem = document.getElementById('bulk-hint-trac-nghiem');
         const hSai = document.getElementById('bulk-hint-dung-sai');
         const hLoi = document.getElementById('bulk-hint-tra-loi-ngan');
