@@ -260,13 +260,12 @@ function renderCurrentQuestion() {
 }
 
 // ==========================================
-// TÍNH NĂNG TRỢ LÝ AI (SỬ DỤNG BẢN MỚI NHẤT)
+// TÍNH NĂNG TRỢ LÝ AI (ĐÃ NÂNG CẤP XỬ LÝ TOÁN LÝ HÓA)
 // ==========================================
 const rawTextInput = document.getElementById('ai-raw-text');
 const btnAiParse = document.getElementById('btn-ai-parse');
 const aiStatus = document.getElementById('ai-status');
 
-// Chìa khóa an toàn của bạn
 const _p1 = "AQ.Ab8RN6KATwc";
 const _p2 = "iao_L06TOdHldaO";
 const _p3 = "6YSeZdYx5QB3f3RRFMHpZE2A";
@@ -283,13 +282,15 @@ if (btnAiParse) {
 
         const prompt = `
 Bạn là trợ lý giáo dục. Nhiệm vụ của bạn là đọc 1 câu hỏi thô dưới đây và trích xuất thành định dạng JSON.
+ĐẶC BIỆT QUAN TRỌNG: Nếu câu hỏi hoặc đáp án có chứa công thức Toán, Lý, Hóa (phân số, số mũ, căn bậc, phương trình hóa học...), hãy TỰ ĐỘNG CHUYỂN ĐỔI sang định dạng LaTeX và bắt buộc bọc trong cặp dấu $$. Ví dụ: $$x^2 + 2x = 0$$ hoặc $$H_2SO_4$$. Nếu câu hỏi thô viết dạng chữ (ví dụ "x bình phương cộng 2x bằng 0") cũng phải dịch sang LaTeX ($$x^2 + 2x = 0$$).
+
 Có 3 loại câu hỏi (type): "trac-nghiem", "dung-sai", "tra-loi-ngan".
 1. Nếu là trắc nghiệm 1 đáp án đúng:
-   JSON: {"type": "trac-nghiem", "question": "Nội dung câu hỏi (bỏ chữ Câu 1 đi)", "options": ["đáp án A", "đáp án B", "đáp án C", "đáp án D"], "correctIndex": 0} (correctIndex từ 0 đến 3 tương ứng A,B,C,D).
+   JSON: {"type": "trac-nghiem", "question": "Nội dung câu", "options": ["đáp án A", "đáp án B", "đáp án C", "đáp án D"], "correctIndex": 0} (correctIndex từ 0 đến 3).
 2. Nếu là Đúng/Sai nhiều ý:
-   JSON: {"type": "dung-sai", "question": "Nội dung câu hỏi", "statements": [{"text": "ý 1", "isTrue": true/false}, {"text": "ý 2", "isTrue": true/false}, {"text": "ý 3", "isTrue": true/false}, {"text": "ý 4", "isTrue": true/false}]}
+   JSON: {"type": "dung-sai", "question": "Nội dung câu", "statements": [{"text": "ý 1", "isTrue": true/false}, {"text": "ý 2", "isTrue": true/false}, {"text": "ý 3", "isTrue": true/false}, {"text": "ý 4", "isTrue": true/false}]}
 3. Nếu là trả lời ngắn:
-   JSON: {"type": "tra-loi-ngan", "question": "Nội dung câu hỏi", "answerKey": "đáp án ngắn gọn"}
+   JSON: {"type": "tra-loi-ngan", "question": "Nội dung câu hỏi", "answerKey": "đáp án"}
 
 Câu hỏi thô cần phân tích:
 """${rawText}"""
@@ -298,7 +299,6 @@ CHÚ Ý: Chỉ trả về ĐÚNG 1 chuỗi JSON hợp lệ, không bọc trong d
         `;
 
         try {
-            // Đã đổi thành gemini-flash-latest
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${MY_GEMINI_API_KEY}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
