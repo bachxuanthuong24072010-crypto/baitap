@@ -33,6 +33,91 @@ if (quizId) {
     document.getElementById('admin-panel').style.display = 'block';
 }
 
+// ----------------------------------------------------
+// TÍNH NĂNG MỚI: NHẬP NHANH TỪ VĂN BẢN
+// ----------------------------------------------------
+const toggleBulk = document.getElementById('toggle-bulk');
+if (toggleBulk) {
+    toggleBulk.addEventListener('click', () => {
+        const bulkArea = document.getElementById('bulk-area');
+        const bulkIcon = document.getElementById('bulk-icon');
+        if (bulkArea.style.display === 'none') {
+            bulkArea.style.display = 'block'; bulkIcon.innerText = '▲';
+        } else {
+            bulkArea.style.display = 'none'; bulkIcon.innerText = '▼';
+        }
+    });
+}
+
+const btnBulkAdd = document.getElementById('btn-bulk-add');
+if (btnBulkAdd) {
+    btnBulkAdd.addEventListener('click', () => {
+        const text = document.getElementById('bulk-input').value.trim();
+        if (!text) return alert("Vui lòng dán văn bản câu hỏi vào ô nhé!");
+
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
+        let currentQ = null;
+        let addedCount = 0;
+        
+        function saveParsedQ(q) {
+            const cIndex = q.ansKey.charCodeAt(0) - 65; // A=0, B=1, C=2, D=3
+            window.danhSachCauHoi.push({
+                type: "trac-nghiem", question: q.question,
+                options: [
+                    { text: q.options[0], isCorrect: cIndex === 0 },
+                    { text: q.options[1], isCorrect: cIndex === 1 },
+                    { text: q.options[2], isCorrect: cIndex === 2 },
+                    { text: q.options[3], isCorrect: cIndex === 3 }
+                ]
+            });
+        }
+
+        for(let i=0; i < lines.length; i++) {
+            let line = lines[i];
+            
+            // Tìm thấy từ bắt đầu bằng "Câu X:" hoặc "Bài X:"
+            if (line.match(/^(Câu|Bài)\s*\d+:/i) || (!line.match(/^[A-D]\./i) && !line.match(/^Đáp án:/i) && !currentQ)) {
+                if (currentQ && currentQ.options.length === 4 && currentQ.ansKey) {
+                    saveParsedQ(currentQ); addedCount++;
+                }
+                currentQ = { question: line.replace(/^(Câu|Bài)\s*\d+:\s*/i, ''), options: [], ansKey: null };
+            } 
+            // Bắt đầu bằng A., B., C., D.
+            else if (line.match(/^[A-D]\./i) && currentQ) {
+                currentQ.options.push(line.replace(/^[A-D]\.\s*/i, '').trim());
+            } 
+            // Bắt đầu bằng chữ "Đáp án: A"
+            else if (line.match(/^Đáp án:\s*[A-D]/i) && currentQ) {
+                currentQ.ansKey = line.match(/^Đáp án:\s*([A-D])/i)[1].toUpperCase();
+                if (currentQ.options.length === 4) {
+                    saveParsedQ(currentQ); addedCount++;
+                    currentQ = null; // Reset để nhận câu mới
+                }
+            } 
+            // Nếu câu hỏi dài nhiều dòng thì nối thêm vào
+            else if (currentQ && currentQ.options.length === 0) {
+                currentQ.question += '\n' + line; 
+            }
+        }
+        // Lưu câu cuối cùng
+        if (currentQ && currentQ.options.length === 4 && currentQ.ansKey) {
+            saveParsedQ(currentQ); addedCount++;
+        }
+
+        if (addedCount > 0) {
+            alert(`🎉 Thành công! Đã tự động thêm ${addedCount} câu hỏi trắc nghiệm!`);
+            document.getElementById('bulk-input').value = ''; // Xóa trắng ô để dán cái khác
+            renderPreview();
+            // Tự động thu gọn bảng
+            document.getElementById('bulk-area').style.display = 'none';
+            document.getElementById('bulk-icon').innerText = '▼';
+        } else {
+            alert("❌ Không tìm thấy câu hỏi nào! Hãy chắc chắn văn bản của bạn có đúng 4 dòng A. B. C. D. và dòng chữ 'Đáp án: A' ở cuối mỗi câu nhé.");
+        }
+    });
+}
+// ----------------------------------------------------
+
 const questionType = document.getElementById('question-type');
 if (questionType) {
     function updateFormDisplay() {
@@ -99,7 +184,7 @@ function renderPreview() {
                         <strong style="color:#8ab4f8">Câu ${i + 1}:</strong>
                         <button onclick="window.danhSachCauHoi.splice(${i}, 1); renderPreview();" style="width:auto; padding:4px 8px; background:#f44336; color:white; font-size:12px; margin:0; border:none; border-radius:4px; cursor:pointer;">Xóa câu này</button>
                     </div>
-                    <textarea onchange="window.danhSachCauHoi[${i}].question = this.value" style="width:100%; margin-bottom:10px;">${cau.question}</textarea>`;
+                    <textarea onchange="window.danhSachCauHoi[${i}].question = this.value" style="width:100%; margin-bottom:10px; background:#303134; color:white; border:1px solid #5f6368; padding:8px;">${cau.question}</textarea>`;
 
         if (cau.type === "trac-nghiem") {
             cau.options.forEach((opt, j) => {
@@ -107,7 +192,7 @@ function renderPreview() {
                 html += `<div style="display:flex; align-items:center; margin-bottom:5px;">
                             <input type="radio" name="edit-correct-${i}" ${checked} style="width:auto; margin-right:10px;" 
                                 onchange="window.danhSachCauHoi[${i}].options.forEach(o => o.isCorrect = false); window.danhSachCauHoi[${i}].options[${j}].isCorrect = true;">
-                            <input type="text" value="${opt.text}" style="margin:0; width:100%;" onchange="window.danhSachCauHoi[${i}].options[${j}].text = this.value">
+                            <input type="text" value="${opt.text}" style="margin:0; width:100%; background:#303134; color:white; border:1px solid #5f6368; padding:8px;" onchange="window.danhSachCauHoi[${i}].options[${j}].text = this.value">
                         </div>`;
             });
         } else if (cau.type === "dung-sai") {
@@ -116,11 +201,11 @@ function renderPreview() {
                 html += `<div style="display:flex; align-items:center; margin-bottom:5px;">
                             <input type="checkbox" ${checked} style="width:auto; margin-right:10px;"
                                 onchange="window.danhSachCauHoi[${i}].statements[${j}].isTrue = this.checked">
-                            <input type="text" value="${stmt.text}" style="margin:0; width:100%;" onchange="window.danhSachCauHoi[${i}].statements[${j}].text = this.value">
+                            <input type="text" value="${stmt.text}" style="margin:0; width:100%; background:#303134; color:white; border:1px solid #5f6368; padding:8px;" onchange="window.danhSachCauHoi[${i}].statements[${j}].text = this.value">
                         </div>`;
             });
         } else {
-            html += `<input type="text" value="${cau.answerKey}" placeholder="Đáp án đúng..." onchange="window.danhSachCauHoi[${i}].answerKey = this.value" style="margin-top:5px; width:100%;">`;
+            html += `<input type="text" value="${cau.answerKey}" placeholder="Đáp án đúng..." onchange="window.danhSachCauHoi[${i}].answerKey = this.value" style="margin-top:5px; width:100%; background:#303134; color:white; border:1px solid #5f6368; padding:8px;">`;
         }
         html += `</div>`;
     });
