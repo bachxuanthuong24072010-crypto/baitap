@@ -260,113 +260,189 @@ function renderCurrentQuestion() {
 }
 
 // ==========================================
-// TÍNH NĂNG TRỢ LÝ AI (HỆ THỐNG 2 AI NỐI TIẾP THEO Ý TƯỞNG CỦA BẠN)
+// TÍNH NĂNG CHATBOT AI AGENT (CÓ TAY CHÂN THAO TÁC DOM)
 // ==========================================
-const rawTextInput = document.getElementById('ai-raw-text');
-const btnAiParse = document.getElementById('btn-ai-parse');
-const aiStatus = document.getElementById('ai-status');
+const chatInput = document.getElementById('chat-input');
+const btnChatSend = document.getElementById('btn-chat-send');
+const chatHistoryBox = document.getElementById('chat-history');
 
 const _p1 = "AQ.Ab8RN6KATwc";
 const _p2 = "iao_L06TOdHldaO";
 const _p3 = "6YSeZdYx5QB3f3RRFMHpZE2A";
 const MY_GEMINI_API_KEY = _p1 + _p2 + _p3;
 
-if (btnAiParse) {
-    btnAiParse.addEventListener('click', async () => {
-        const rawText = rawTextInput.value.trim();
-        if (!rawText) return alert("Vui lòng dán nội dung câu hỏi thô vào ô!");
+let conversationContext = [
+    {
+        "role": "user",
+        "parts": [{ "text": "Bạn là AI Agent giáo dục. Bạn có khả năng chat bình thường và có quyền Gọi Hàm (Function Calling) để tự động điền form. Bất cứ khi nào người dùng yêu cầu 'Hãy điền câu hỏi này vào form' hoặc tương tự, bạn bắt buộc phải GỌI HÀM fill_quiz_form để giúp người dùng. LƯU Ý KHI GỌI HÀM: Mọi công thức Toán, Lý, Hóa trong câu hỏi phải được dịch sang LaTeX và bọc trong cặp dấu $$...$$." }]
+    },
+    {
+        "role": "model",
+        "parts": [{ "text": "Đã rõ lệnh! Em đã sẵn sàng làm trợ lý vừa chat, vừa tự động điền form cho Thầy/Cô ạ." }]
+    }
+];
+
+// Khai báo công cụ "cánh tay" cho AI
+const aiTools = [{
+    functionDeclarations: [{
+        name: "fill_quiz_form",
+        description: "Gọi hàm này ĐỂ TỰ ĐỘNG ĐIỀN câu hỏi và đáp án vào giao diện web khi người dùng yêu cầu.",
+        parameters: {
+            type: "OBJECT",
+            properties: {
+                type: { type: "STRING", description: "BẮT BUỘC: 'trac-nghiem' (Trắc nghiệm), 'dung-sai' (Đúng/Sai), 'tra-loi-ngan' (Trả lời ngắn)" },
+                question: { type: "STRING", description: "Đề bài (Bắt buộc phải dịch chữ Toán học sang LaTeX $$...$$)" },
+                options: { type: "ARRAY", items: { type: "STRING" }, description: "4 đáp án A, B, C, D (Chỉ dùng cho câu trắc-nghiệm)" },
+                correctIndex: { type: "INTEGER", description: "Vị trí đáp án đúng (0,1,2,3) (Chỉ dùng cho câu trắc-nghiệm)" },
+                statements: {
+                    type: "ARRAY",
+                    items: { type: "OBJECT", properties: { text: { type: "STRING" }, isTrue: { type: "BOOLEAN" } } },
+                    description: "Mảng 4 phát biểu (Chỉ dùng cho câu dung-sai)"
+                },
+                answerKey: { type: "STRING", description: "Đáp án ngắn (Chỉ dùng cho câu tra-loi-ngan)" }
+            },
+            required: ["type", "question"]
+        }
+    }]
+}];
+
+function appendMessage(sender, text) {
+    if (!chatHistoryBox) return null;
+    const msgDiv = document.createElement('div');
+    msgDiv.style.padding = '10px 15px';
+    msgDiv.style.borderRadius = '15px';
+    msgDiv.style.maxWidth = '85%';
+    msgDiv.style.fontSize = '15px';
+    msgDiv.style.lineHeight = '1.4';
+    msgDiv.style.whiteSpace = 'pre-wrap';
+    msgDiv.style.marginBottom = '15px';
+
+    if (sender === 'user') {
+        msgDiv.style.background = '#8ab4f8';
+        msgDiv.style.color = '#202124';
+        msgDiv.style.borderTopRightRadius = '0';
+        msgDiv.style.alignSelf = 'flex-end';
+    } else {
+        msgDiv.style.background = '#3c4043';
+        msgDiv.style.color = 'white';
+        msgDiv.style.borderTopLeftRadius = '0';
+        msgDiv.style.alignSelf = 'flex-start';
+    }
+    
+    msgDiv.innerText = text;
+    chatHistoryBox.appendChild(msgDiv);
+    chatHistoryBox.scrollTop = chatHistoryBox.scrollHeight;
+    
+    if (typeof renderMathInElement === "function") {
+        renderMathInElement(msgDiv, { delimiters: [{left: "$$", right: "$$", display: false}] });
+    }
+    return msgDiv;
+}
+
+// Khớp nối cơ bắp tay chân của AI với trang Web
+function executeFillForm(args) {
+    try {
+        document.getElementById('question-type').value = args.type;
+        document.getElementById('question-type').dispatchEvent(new Event('change')); 
         
-        btnAiParse.disabled = true;
+        document.getElementById('question').value = args.question || '';
+
+        if (args.type === 'trac-nghiem' && args.options) {
+            document.getElementById('opt-a').value = args.options[0] || '';
+            document.getElementById('opt-b').value = args.options[1] || '';
+            document.getElementById('opt-c').value = args.options[2] || '';
+            document.getElementById('opt-d').value = args.options[3] || '';
+            const radios = document.querySelectorAll('input[name="correct-answer"]');
+            radios.forEach(r => r.checked = false);
+            if(args.correctIndex !== undefined && radios[args.correctIndex]) {
+                radios[args.correctIndex].checked = true;
+            }
+        } else if (args.type === 'dung-sai' && args.statements) {
+            const ids = ['a', 'b', 'c', 'd'];
+            args.statements.forEach((stmt, i) => {
+                if (i < 4) {
+                    document.getElementById(`ds-opt-${ids[i]}`).value = stmt.text || '';
+                    document.getElementById(`ds-ans-${ids[i]}`).checked = stmt.isTrue || false;
+                }
+            });
+        } else if (args.type === 'tra-loi-ngan') {
+            document.getElementById('answer-key').value = args.answerKey || '';
+        }
+        return true;
+    } catch (e) {
+        console.error("Lỗi khi điền form:", e);
+        return false;
+    }
+}
+
+if (btnChatSend) {
+    btnChatSend.addEventListener('click', async () => {
+        const userText = chatInput.value.trim();
+        if (!userText) return;
+
+        chatInput.value = '';
+        appendMessage('user', userText);
+        const loadingMsg = appendMessage('model', '⏳ Đang phân tích...');
+
+        conversationContext.push({ "role": "user", "parts": [{ "text": userText }] });
 
         try {
-            // ----------------------------------------------------
-            // AI SỐ 1: BƯỚC DỊCH SANG LATEX
-            // ----------------------------------------------------
-            aiStatus.innerText = "⏳ Bước 1/2: AI đang dịch văn bản lộn xộn sang công thức Toán LaTeX...";
-            
-            const prompt1 = `Bạn là chuyên gia Toán học. Nhiệm vụ DUY NHẤT của bạn là đọc đoạn văn bản lộn xộn dưới đây, tìm tất cả các biểu thức Toán học (như "phân số", "tử số", "mẫu số", "mũ", "bình phương", "cộng", "trừ", "nhân", "chia", "phương trình", "bằng"...) và DỊCH TOÀN BỘ chúng sang mã Toán học LaTeX, bọc trong cặp dấu $$. 
-Giữ nguyên các chữ tiếng Việt bình thường. Tuyệt đối không giải bài, không tóm tắt, chỉ làm nhiệm vụ dịch công thức.
-
-Ví dụ 1: "Giải phương trình x bình phương cộng 2x bằng 0" -> "Giải phương trình $$x^2 + 2x = 0$$"
-Ví dụ 2: "tử số là x mũ 3 trừ đi 1, mẫu số là x trừ 1" -> "tử số là $$x^3 - 1$$, mẫu số là $$x - 1$$"
-
-Văn bản cần dịch:
-"""${rawText}"""`;
-
-            const res1 = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt1 }] }] })
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    contents: conversationContext,
+                    tools: aiTools 
+                })
             });
-            const data1 = await res1.json();
-            if (data1.error) throw new Error("Lỗi AI 1: " + data1.error.message); 
-            const latexText = data1.candidates[0].content.parts[0].text.trim();
 
-            // ----------------------------------------------------
-            // AI SỐ 2: BƯỚC TRÍCH XUẤT JSON (CHẠY NGẦM)
-            // ----------------------------------------------------
-            aiStatus.innerText = "⏳ Bước 2/2: AI đang trích xuất dữ liệu để tự động điền...";
+            const data = await response.json();
+            if (data.error) throw new Error(data.error.message); 
 
-            const prompt2 = `Nhiệm vụ của bạn là đọc câu hỏi đã được format công thức dưới đây và trích xuất thành định dạng JSON.
-Tuyệt đối giữ nguyên mọi công thức $$...$$ trong văn bản, BÊ NGUYÊN XI chúng vào các giá trị của JSON.
-
-Có 3 loại câu hỏi (type): "trac-nghiem", "dung-sai", "tra-loi-ngan".
-1. Nếu là trắc nghiệm:
-   JSON: {"type": "trac-nghiem", "question": "Nội dung câu", "options": ["đáp án A", "đáp án B", "đáp án C", "đáp án D"], "correctIndex": 0} 
-2. Nếu là Đúng/Sai nhiều ý:
-   JSON: {"type": "dung-sai", "question": "Nội dung câu", "statements": [{"text": "ý 1", "isTrue": true/false}, {"text": "ý 2", "isTrue": true/false}, {"text": "ý 3", "isTrue": true/false}, {"text": "ý 4", "isTrue": true/false}]}
-3. Nếu là trả lời ngắn:
-   JSON: {"type": "tra-loi-ngan", "question": "Nội dung câu hỏi", "answerKey": "đáp án"}
-
-Câu hỏi cần phân tích:
-"""${latexText}"""
-
-CHÚ Ý: Chỉ trả về ĐÚNG 1 chuỗi JSON hợp lệ, không bọc trong dấu markdown.`;
-
-            const res2 = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt2 }] }] })
-            });
-            const data2 = await res2.json();
-            if (data2.error) throw new Error("Lỗi AI 2: " + data2.error.message); 
-
-            let aiText = data2.candidates[0].content.parts[0].text.trim();
-            if (aiText.startsWith("```json")) aiText = aiText.replace(/```json/g, "").replace(/```/g, "").trim();
-            if (aiText.startsWith("```")) aiText = aiText.replace(/```/g, "").trim();
-
-            const result = JSON.parse(aiText);
+            loadingMsg.remove();
             
-            document.getElementById('question-type').value = result.type;
-            document.getElementById('question-type').dispatchEvent(new Event('change')); 
-            
-            document.getElementById('question').value = result.question;
+            const message = data.candidates[0].content;
+            conversationContext.push(message); // Lưu vào trí nhớ
 
-            if (result.type === 'trac-nghiem') {
-                document.getElementById('opt-a').value = result.options[0] || '';
-                document.getElementById('opt-b').value = result.options[1] || '';
-                document.getElementById('opt-c').value = result.options[2] || '';
-                document.getElementById('opt-d').value = result.options[3] || '';
-                const radios = document.querySelectorAll('input[name="correct-answer"]');
-                radios.forEach(r => r.checked = false);
-                if(radios[result.correctIndex]) radios[result.correctIndex].checked = true;
-            } else if (result.type === 'dung-sai') {
-                const ids = ['a', 'b', 'c', 'd'];
-                result.statements.forEach((stmt, i) => {
-                    if (i < 4) {
-                        document.getElementById(`ds-opt-${ids[i]}`).value = stmt.text;
-                        document.getElementById(`ds-ans-${ids[i]}`).checked = stmt.isTrue;
+            let botRepliedText = false;
+
+            // Quét xem AI trả về cái gì (Văn bản hay Lệnh Gọi Hàm)
+            for (let part of message.parts) {
+                if (part.text) {
+                    appendMessage('model', part.text);
+                    botRepliedText = true;
+                }
+                
+                if (part.functionCall && part.functionCall.name === "fill_quiz_form") {
+                    // KHI AI QUYẾT ĐỊNH THÒ TAY RA ĐIỀN FORM
+                    const success = executeFillForm(part.functionCall.args);
+                    if (success) {
+                        appendMessage('model', "🤖 [Hành động]: Em đã hiểu và tự động điền các thông tin vào Form bên dưới thành công! Thầy/cô kiểm tra lại nhé.");
+                        
+                        // Thông báo lại cho AI biết là tay chân đã cử động thành công
+                        conversationContext.push({
+                            "role": "user",
+                            "parts": [{
+                                "functionResponse": {
+                                    "name": "fill_quiz_form",
+                                    "response": { "result": "Thành công" }
+                                }
+                            }]
+                        });
                     }
-                });
-            } else if (result.type === 'tra-loi-ngan') {
-                document.getElementById('answer-key').value = result.answerKey;
+                }
             }
-
-            aiStatus.innerText = "✅ Hệ thống 2 AI đã xử lý xong! Bạn hãy kiểm tra lại và bấm 'Thêm câu hỏi này'.";
-            rawTextInput.value = ''; 
         } catch (error) {
             console.error(error);
-            aiStatus.innerText = "❌ Lỗi hệ thống: " + error.message;
-        } finally {
-            btnAiParse.disabled = false;
+            loadingMsg.innerText = "❌ Có lỗi xảy ra: " + error.message;
+            conversationContext.pop(); 
+        }
+    });
+    
+    chatInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            btnChatSend.click();
         }
     });
 }
