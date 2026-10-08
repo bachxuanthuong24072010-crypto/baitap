@@ -55,7 +55,8 @@ document.getElementById('btn-add').addEventListener('click', () => {
     if (!questionText) return alert("Vui lòng nhập câu hỏi!");
 
     if (type === 'trac-nghiem') {
-        const correctIndex = parseInt(document.querySelector('input[name="correct-answer"]:checked').value);
+        const checkedEl = document.querySelector('input[name="correct-answer"]:checked');
+        const correctIndex = checkedEl ? parseInt(checkedEl.value) : 0;
         window.danhSachCauHoi.push({
             type: "trac-nghiem", question: questionText,
             options: [
@@ -260,7 +261,7 @@ function renderCurrentQuestion() {
 }
 
 // ==========================================
-// TÍNH NĂNG CHATBOT AI AGENT (ĐÃ ĐỔI SANG BẢN XỊN GEMINI-3.5-FLASH)
+// TÍNH NĂNG CHATBOT AI AGENT (GEMINI 3.5 FLASH + TỰ ĐỘNG THÊM LIÊN HOÀN)
 // ==========================================
 const chatInput = document.getElementById('chat-input');
 const btnChatSend = document.getElementById('btn-chat-send');
@@ -270,22 +271,28 @@ const _p1 = "AQ.Ab8RN6KATwc";
 const _p2 = "iao_L06TOdHldaO";
 const _p3 = "6YSeZdYx5QB3f3RRFMHpZE2A";
 const MY_GEMINI_API_KEY = _p1 + _p2 + _p3;
+const thoiGianHienTai = new Date().toLocaleString('vi-VN');
 
 let conversationContext = [
     {
         "role": "user",
-        "parts": [{ "text": "Bạn là AI Agent giáo dục. Bạn có khả năng chat bình thường và có quyền Gọi Hàm (Function Calling) để tự động điền form. Bất cứ khi nào người dùng yêu cầu 'Hãy điền câu hỏi này vào form' hoặc tương tự, bạn bắt buộc phải GỌI HÀM fill_quiz_form để giúp người dùng. LƯU Ý KHI GỌI HÀM: Mọi công thức Toán, Lý, Hóa trong câu hỏi phải được dịch sang LaTeX và bọc trong cặp dấu $$...$$." }]
+        // Đã cập nhật lệnh: ÉP AI TẠO NHIỀU CÂU HỎI CÙNG LÚC NẾU YÊU CẦU
+        "parts": [{ "text": `Bạn là AI Agent giáo dục. Thông tin hệ thống: Hôm nay là ${thoiGianHienTai}. Bạn có khả năng chat bình thường và có quyền Gọi Hàm (Function Calling) để điền form. 
+LƯU Ý CỰC KỲ QUAN TRỌNG: 
+1. Bất cứ khi nào người dùng yêu cầu tạo câu hỏi, bạn PHẢI GỌI HÀM fill_quiz_form. 
+2. Nếu người dùng yêu cầu tạo NHIỀU câu hỏi (Ví dụ: tạo 3 câu, 5 câu), bạn BẮT BUỘC PHẢI GỌI HÀM fill_quiz_form NHIỀU LẦN LIÊN TỤC trong cùng một lượt trả lời (mỗi câu hỏi tương ứng với 1 lần gọi hàm).
+3. Mọi công thức Toán, Lý, Hóa trong đề bài và đáp án phải được dịch sang LaTeX và bọc trong cặp dấu $$...$$.` }]
     },
     {
         "role": "model",
-        "parts": [{ "text": "Đã rõ lệnh! Em đã sẵn sàng làm trợ lý vừa chat, vừa tự động điền form cho Thầy/Cô ạ." }]
+        "parts": [{ "text": "Đã rõ lệnh! Em có thể gọi hàm liên tục để tạo ra bao nhiêu câu hỏi tùy ý Thầy/Cô ạ." }]
     }
 ];
 
 const aiTools = [{
     functionDeclarations: [{
         name: "fill_quiz_form",
-        description: "Gọi hàm này ĐỂ TỰ ĐỘNG ĐIỀN câu hỏi và đáp án vào giao diện web khi người dùng yêu cầu.",
+        description: "Gọi hàm này ĐỂ TỰ ĐỘNG ĐIỀN câu hỏi và đáp án vào form. Có thể gọi hàm này nhiều lần liên tiếp để tạo nhiều câu hỏi.",
         parameters: {
             type: "OBJECT",
             properties: {
@@ -385,7 +392,6 @@ if (btnChatSend) {
         conversationContext.push({ "role": "user", "parts": [{ "text": userText }] });
 
         try {
-            // URL DÙNG gemini-3.5-flash VỪA THÔNG MINH, VỪA KHÔNG BỊ GIỚI HẠN 20 LƯỢT
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -403,27 +409,42 @@ if (btnChatSend) {
             const message = data.candidates[0].content;
             conversationContext.push(message);
 
+            let addedCount = 0;
+            let functionResponses = [];
+
+            // Đọc qua tất cả các hành động mà AI trả về
             for (let part of message.parts) {
                 if (part.text) {
                     appendMessage('model', part.text);
                 }
                 
                 if (part.functionCall && part.functionCall.name === "fill_quiz_form") {
+                    // 1. Điền vào Form
                     const success = executeFillForm(part.functionCall.args);
                     if (success) {
-                        appendMessage('model', "🤖 [Hành động]: Em đã tự động điền các thông tin vào Form bên dưới thành công! Thầy/cô kiểm tra lại nhé.");
-                        conversationContext.push({
-                            "role": "user",
-                            "parts": [{
-                                "functionResponse": {
-                                    "name": "fill_quiz_form",
-                                    "response": { "result": "Thành công" }
-                                }
-                            }]
+                        // 2. TỰ ĐỘNG BẤM NÚT THÊM
+                        document.getElementById('btn-add').click();
+                        addedCount++;
+                        
+                        functionResponses.push({
+                            "functionResponse": {
+                                "name": "fill_quiz_form",
+                                "response": { "result": "Thành công" }
+                            }
                         });
                     }
                 }
             }
+
+            // Ghi nhận phản hồi cho AI biết là đã chạy hàm xong
+            if (functionResponses.length > 0) {
+                conversationContext.push({
+                    "role": "user",
+                    "parts": functionResponses
+                });
+                appendMessage('model', `🤖 [Hành động]: Em đã tự động tạo và TỰ ĐỘNG THÊM ${addedCount} câu hỏi vào Danh Sách bên dưới. Thầy/Cô lăn chuột xuống để rà soát nhé!`);
+            }
+
         } catch (error) {
             console.error(error);
             loadingMsg.innerText = "❌ Có lỗi xảy ra: " + error.message;
