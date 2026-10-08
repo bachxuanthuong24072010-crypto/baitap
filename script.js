@@ -260,7 +260,7 @@ function renderCurrentQuestion() {
 }
 
 // ==========================================
-// TÍNH NĂNG CHATBOT AI AGENT (CÓ TAY CHÂN THAO TÁC DOM)
+// TÍNH NĂNG CHATBOT AI AGENT (ĐÃ ĐỔI SANG MODEL ỔN ĐỊNH LATEST)
 // ==========================================
 const chatInput = document.getElementById('chat-input');
 const btnChatSend = document.getElementById('btn-chat-send');
@@ -282,7 +282,6 @@ let conversationContext = [
     }
 ];
 
-// Khai báo công cụ "cánh tay" cho AI
 const aiTools = [{
     functionDeclarations: [{
         name: "fill_quiz_form",
@@ -339,7 +338,6 @@ function appendMessage(sender, text) {
     return msgDiv;
 }
 
-// Khớp nối cơ bắp tay chân của AI với trang Web
 function executeFillForm(args) {
     try {
         document.getElementById('question-type').value = args.type;
@@ -382,12 +380,13 @@ if (btnChatSend) {
 
         chatInput.value = '';
         appendMessage('user', userText);
-        const loadingMsg = appendMessage('model', '⏳ Đang phân tích...');
+        const loadingMsg = appendMessage('model', '⏳ Đang suy nghĩ...');
 
         conversationContext.push({ "role": "user", "parts": [{ "text": userText }] });
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
+            // ĐÃ THAY ĐỔI URL CHUẨN SANG gemini-flash-latest ĐỂ HOẠT ĐỘNG SIÊU NHANH VÀ ỔN ĐỊNH
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${MY_GEMINI_API_KEY}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
@@ -402,24 +401,17 @@ if (btnChatSend) {
             loadingMsg.remove();
             
             const message = data.candidates[0].content;
-            conversationContext.push(message); // Lưu vào trí nhớ
+            conversationContext.push(message);
 
-            let botRepliedText = false;
-
-            // Quét xem AI trả về cái gì (Văn bản hay Lệnh Gọi Hàm)
             for (let part of message.parts) {
                 if (part.text) {
                     appendMessage('model', part.text);
-                    botRepliedText = true;
                 }
                 
                 if (part.functionCall && part.functionCall.name === "fill_quiz_form") {
-                    // KHI AI QUYẾT ĐỊNH THÒ TAY RA ĐIỀN FORM
                     const success = executeFillForm(part.functionCall.args);
                     if (success) {
                         appendMessage('model', "🤖 [Hành động]: Em đã hiểu và tự động điền các thông tin vào Form bên dưới thành công! Thầy/cô kiểm tra lại nhé.");
-                        
-                        // Thông báo lại cho AI biết là tay chân đã cử động thành công
                         conversationContext.push({
                             "role": "user",
                             "parts": [{
