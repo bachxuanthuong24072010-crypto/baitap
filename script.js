@@ -17,7 +17,6 @@ window.danhSachCauHoi = [];
 let quizDataGlobal = [];
 let currentQuestionIndex = 0;
 
-// Thống kê chi tiết, mảng details của dung-sai dùng để lưu số ý đúng của TỪNG câu
 let quizStats = {
     'trac-nghiem': { correct: 0, total: 0 },
     'dung-sai': { details: [], total: 0 },
@@ -87,7 +86,6 @@ document.getElementById('btn-add').addEventListener('click', () => {
         });
     }
     
-    // Reset form
     document.getElementById('question').value = '';
     ['a', 'b', 'c', 'd'].forEach(id => {
         if(document.getElementById(`opt-${id}`)) document.getElementById(`opt-${id}`).value = '';
@@ -99,7 +97,6 @@ document.getElementById('btn-add').addEventListener('click', () => {
     renderPreview();
 });
 
-// Khung Xem trước & Sửa trực tiếp
 function renderPreview() {
     let html = `<h3>Danh sách đã thêm (${window.danhSachCauHoi.length} câu - Có thể sửa trực tiếp):</h3>`;
     window.danhSachCauHoi.forEach((cau, i) => {
@@ -142,7 +139,6 @@ function renderPreview() {
 }
 window.renderPreview = renderPreview;
 
-// Lưu & Tạo link
 document.getElementById('btn-save').addEventListener('click', async () => {
     if (window.danhSachCauHoi.length === 0) return alert("Chưa có câu hỏi nào để tạo link!");
     const saveBtn = document.getElementById('btn-save');
@@ -155,7 +151,6 @@ document.getElementById('btn-save').addEventListener('click', async () => {
     finally { saveBtn.innerText = "Lưu và tạo Link"; saveBtn.disabled = false; }
 });
 
-// Tải đề làm bài
 async function loadQuiz(id) {
     try {
         const docSnap = await getDoc(doc(db, "quizzes", id));
@@ -163,10 +158,9 @@ async function loadQuiz(id) {
             quizDataGlobal = docSnap.data().danhSach;
             currentQuestionIndex = 0;
             
-            // Khởi tạo và đếm tổng số câu cho từng dạng
             quizStats = {
                 'trac-nghiem': { correct: 0, total: 0 },
-                'dung-sai': { details: [], total: 0 }, // mảng details dùng để lưu số ý đúng từng câu
+                'dung-sai': { details: [], total: 0 }, 
                 'tra-loi-ngan': { correct: 0, total: 0 }
             };
             quizDataGlobal.forEach(q => {
@@ -178,26 +172,22 @@ async function loadQuiz(id) {
     } catch (err) { document.getElementById('quiz-content').innerHTML = "Lỗi tải đề: " + err.message; }
 }
 
-// Hiển thị cho học sinh làm
 function renderCurrentQuestion() {
     const container = document.getElementById('quiz-content');
 
     if (currentQuestionIndex >= quizDataGlobal.length) {
-        // TẠO BẢNG PHÂN TÍCH KẾT QUẢ KHI HOÀN THÀNH
         let resultDetails = "";
         
-        // Cột Trắc Nghiệm
         if (quizStats['trac-nghiem'].total > 0) {
             resultDetails += `<p style="font-size: 16px; margin: 10px 0; border-bottom: 1px solid #5f6368; padding-bottom: 15px;">
                                 <strong style="color: white;">Trắc nghiệm:</strong> <span style="color: #4caf50; font-weight: bold;">${quizStats['trac-nghiem'].correct} câu đúng</span> / ${quizStats['trac-nghiem'].total} câu
                               </p>`;
         }
 
-        // Cột Đúng/Sai (Hiển thị định dạng Câu 1: X/4 ; Câu 2: Y/4)
         if (quizStats['dung-sai'].total > 0) {
             let dsText = quizStats['dung-sai'].details.map((detail, idx) => {
                 return `Câu ${idx + 1}: ${detail.correctCount}/4`;
-            }).join(' ; '); // Nối các câu bằng dấu chấm phẩy
+            }).join(' ; '); 
             
             resultDetails += `<p style="font-size: 16px; margin: 10px 0; border-bottom: 1px solid #5f6368; padding-bottom: 15px;">
                                 <strong style="color: white;">Đúng / Sai:</strong> 
@@ -205,7 +195,6 @@ function renderCurrentQuestion() {
                               </p>`;
         }
 
-        // Cột Trả lời ngắn
         if (quizStats['tra-loi-ngan'].total > 0) {
             resultDetails += `<p style="font-size: 16px; margin: 10px 0;">
                                 <strong style="color: white;">Trả lời ngắn:</strong> <span style="color: #4caf50; font-weight: bold;">${quizStats['tra-loi-ngan'].correct} câu đúng</span> / ${quizStats['tra-loi-ngan'].total} câu
@@ -256,7 +245,6 @@ function renderCurrentQuestion() {
 
     let answered = false;
 
-    // Logic thống kê câu trắc nghiệm
     if (cauHoi.type === 'trac-nghiem') {
         const optionEls = container.querySelectorAll('.trac-nghiem-opt');
         optionEls.forEach((el, i) => {
@@ -279,9 +267,7 @@ function renderCurrentQuestion() {
                 }
             });
         });
-    } 
-    // Logic thống kê câu đúng sai
-    else if (cauHoi.type === 'dung-sai') {
+    } else if (cauHoi.type === 'dung-sai') {
         const optionEls = container.querySelectorAll('.dung-sai-opt');
         optionEls.forEach((el, i) => {
             const cb = el.querySelector('input[type="checkbox"]');
@@ -304,7 +290,7 @@ function renderCurrentQuestion() {
                 let isSelected = cb.checked;
                 let isCorrect = cauHoi.statements[i].isTrue;
 
-                cb.disabled = true; // Khóa không cho sửa đáp án
+                cb.disabled = true;
 
                 if (isSelected === isCorrect) {
                     correctCount++;
@@ -316,12 +302,9 @@ function renderCurrentQuestion() {
                 }
             });
             
-            // Lưu lại số ý đúng của CÂU NÀY vào mảng details
             quizStats['dung-sai'].details.push({ correctCount: correctCount });
         });
-    } 
-    // Logic thống kê câu trả lời ngắn
-    else if (cauHoi.type === 'tra-loi-ngan') {
+    } else if (cauHoi.type === 'tra-loi-ngan') {
         const btnCheck = document.getElementById('btn-check-short');
         btnCheck.addEventListener('click', () => {
             if (answered) return; answered = true;
@@ -340,14 +323,102 @@ function renderCurrentQuestion() {
         });
     }
 
-    // Chuyển câu tiếp
     document.getElementById('btn-next').addEventListener('click', () => {
-        // Nếu câu này là Đúng/Sai mà học sinh chưa ấn Xác Nhận, mặc định là đúng 0 ý
         if (!answered && cauHoi.type === 'dung-sai') {
             quizStats['dung-sai'].details.push({ correctCount: 0 });
         }
         
         currentQuestionIndex++; 
         renderCurrentQuestion(); 
+    });
+}
+
+// ==========================================
+// TÍNH NĂNG TRỢ LÝ AI (GEMINI) - ĐÃ NHÚNG SẴN API KEY
+// ==========================================
+const rawTextInput = document.getElementById('ai-raw-text');
+const btnAiParse = document.getElementById('btn-ai-parse');
+const aiStatus = document.getElementById('ai-status');
+
+// ĐÂY LÀ CHÌA KHÓA CỦA BẠN, MÌNH ĐÃ GẮN SẴN VÀO CODE
+const MY_GEMINI_API_KEY = "AQ.Ab8RN6Jgzw5yIK85dC4Tcpi7mkade69dRfhPzgS9Ih4TVnb3ZA";
+
+if (btnAiParse) {
+    btnAiParse.addEventListener('click', async () => {
+        const rawText = rawTextInput.value.trim();
+
+        if (!rawText) return alert("Vui lòng dán nội dung câu hỏi thô vào ô!");
+
+        aiStatus.innerText = "⏳ AI đang đọc và phân tích... Vui lòng đợi nhé!";
+        btnAiParse.disabled = true;
+
+        const prompt = `
+Bạn là trợ lý giáo dục. Nhiệm vụ của bạn là đọc 1 câu hỏi thô dưới đây và trích xuất thành định dạng JSON.
+Có 3 loại câu hỏi (type): "trac-nghiem", "dung-sai", "tra-loi-ngan".
+1. Nếu là trắc nghiệm 1 đáp án đúng:
+   JSON: {"type": "trac-nghiem", "question": "Nội dung câu hỏi (bỏ chữ Câu 1 đi)", "options": ["đáp án A", "đáp án B", "đáp án C", "đáp án D"], "correctIndex": 0} (correctIndex từ 0 đến 3 tương ứng A,B,C,D).
+2. Nếu là Đúng/Sai nhiều ý:
+   JSON: {"type": "dung-sai", "question": "Nội dung câu hỏi", "statements": [{"text": "ý 1", "isTrue": true/false}, {"text": "ý 2", "isTrue": true/false}, {"text": "ý 3", "isTrue": true/false}, {"text": "ý 4", "isTrue": true/false}]}
+3. Nếu là trả lời ngắn:
+   JSON: {"type": "tra-loi-ngan", "question": "Nội dung câu hỏi", "answerKey": "đáp án ngắn gọn"}
+
+Câu hỏi thô cần phân tích:
+"""${rawText}"""
+
+CHÚ Ý: Chỉ trả về ĐÚNG 1 chuỗi JSON hợp lệ, không bọc trong dấu markdown.
+        `;
+
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+
+            const data = await response.json();
+            if (data.error) throw new Error(data.error.message);
+
+            let aiText = data.candidates[0].content.parts[0].text.trim();
+            if (aiText.startsWith("```json")) aiText = aiText.replace(/```json/g, "").replace(/```/g, "").trim();
+            if (aiText.startsWith("```")) aiText = aiText.replace(/```/g, "").trim();
+
+            const result = JSON.parse(aiText);
+            
+            // Đổ dữ liệu vào Form
+            document.getElementById('question-type').value = result.type;
+            document.getElementById('question-type').dispatchEvent(new Event('change')); 
+            
+            document.getElementById('question').value = result.question;
+
+            if (result.type === 'trac-nghiem') {
+                document.getElementById('opt-a').value = result.options[0] || '';
+                document.getElementById('opt-b').value = result.options[1] || '';
+                document.getElementById('opt-c').value = result.options[2] || '';
+                document.getElementById('opt-d').value = result.options[3] || '';
+                const radios = document.querySelectorAll('input[name="correct-answer"]');
+                radios.forEach(r => r.checked = false);
+                if(radios[result.correctIndex]) radios[result.correctIndex].checked = true;
+            } else if (result.type === 'dung-sai') {
+                const ids = ['a', 'b', 'c', 'd'];
+                result.statements.forEach((stmt, i) => {
+                    if (i < 4) {
+                        document.getElementById(`ds-opt-${ids[i]}`).value = stmt.text;
+                        document.getElementById(`ds-ans-${ids[i]}`).checked = stmt.isTrue;
+                    }
+                });
+            } else if (result.type === 'tra-loi-ngan') {
+                document.getElementById('answer-key').value = result.answerKey;
+            }
+
+            aiStatus.innerText = "✅ AI đã điền xong! Bạn hãy kiểm tra lại và bấm 'Thêm câu hỏi này'.";
+            rawTextInput.value = ''; 
+        } catch (error) {
+            console.error(error);
+            aiStatus.innerText = "❌ Lỗi: Bạn kiểm tra lại câu hỏi thô, có thể AI chưa hiểu định dạng câu hỏi đó.";
+        } finally {
+            btnAiParse.disabled = false;
+        }
     });
 }
