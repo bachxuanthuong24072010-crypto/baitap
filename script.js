@@ -260,7 +260,7 @@ function renderCurrentQuestion() {
 }
 
 // ==========================================
-// TÍNH NĂNG TRỢ LÝ AI (BẢN ĐỈNH NHẤT 3.8 FLASH)
+// TÍNH NĂNG TRỢ LÝ AI (KỶ LUẬT THÉP VỀ LATEX)
 // ==========================================
 const rawTextInput = document.getElementById('ai-raw-text');
 const btnAiParse = document.getElementById('btn-ai-parse');
@@ -281,8 +281,12 @@ if (btnAiParse) {
         btnAiParse.disabled = true;
 
         const prompt = `
-Bạn là trợ lý giáo dục. Nhiệm vụ của bạn là đọc 1 câu hỏi thô dưới đây và trích xuất thành định dạng JSON.
-ĐẶC BIỆT QUAN TRỌNG: Nếu câu hỏi hoặc đáp án có chứa công thức Toán, Lý, Hóa (phân số, số mũ, căn bậc, phương trình hóa học...), hãy TỰ ĐỘNG CHUYỂN ĐỔI sang định dạng LaTeX và bắt buộc bọc trong cặp dấu $$. Ví dụ: $$x^2 + 2x = 0$$ hoặc $$H_2SO_4$$. Nếu câu hỏi thô viết dạng chữ (ví dụ "x bình phương cộng 2x bằng 0") cũng phải dịch sang LaTeX ($$x^2 + 2x = 0$$).
+Bạn là trợ lý giáo dục. Nhiệm vụ của bạn là phân tích câu hỏi thô và trả về định dạng JSON.
+
+🔥 LỆNH BẮT BUỘC (KỶ LUẬT THÉP VỀ LATEX):
+MỌI biểu thức Toán, Lý, Hóa (dù viết bằng số hay bằng chữ tiếng Việt như "bình phương", "cộng", "trừ", "căn") ĐỀU BẮT BUỘC PHẢI DỊCH SANG MÃ LATEX VÀ BỌC TRONG DẤU $$. NẾU KHÔNG LÀM SẼ BỊ PHẠT.
+- Ví dụ sai: "x bình phương trừ 5x cộng 6 bằng 0" -> Bắt buộc sửa thành đúng: "$$x^2 - 5x + 6 = 0$$"
+- Ví dụ sai: "x = 2 và x = 3" -> Bắt buộc sửa thành đúng: "$$x = 2$$ và $$x = 3$$"
 
 Có 3 loại câu hỏi (type): "trac-nghiem", "dung-sai", "tra-loi-ngan".
 1. Nếu là trắc nghiệm 1 đáp án đúng:
@@ -295,11 +299,10 @@ Có 3 loại câu hỏi (type): "trac-nghiem", "dung-sai", "tra-loi-ngan".
 Câu hỏi thô cần phân tích:
 """${rawText}"""
 
-CHÚ Ý: Chỉ trả về ĐÚNG 1 chuỗi JSON hợp lệ, không bọc trong dấu markdown.
+CHÚ Ý: Chỉ trả về ĐÚNG 1 chuỗi JSON hợp lệ, tuyệt đối không bọc trong dấu \`\`\`json.
         `;
 
         try {
-            // Đã đổi sang gemini-3.8-flash bản thông minh nhất
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
