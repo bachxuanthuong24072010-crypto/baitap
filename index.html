@@ -14,9 +14,12 @@
 </head>
 <body>
     <div id="admin-panel" style="display:none;">
-        <h2>Tạo câu hỏi</h2>
+        <h2>Tạo đề thi mới</h2>
         
-        <!-- KHUNG CHAT AI ĐA NĂNG MỚI (CÓ TAY CHÂN) -->
+        <!-- Ô NHẬP TÊN ĐỀ THI -->
+        <input type="text" id="quiz-title" placeholder="Nhập tên Đề thi (VD: Kiểm tra 15p Toán Hình)..." style="width:100%; margin-bottom: 20px; padding: 12px; font-size: 16px; border-radius: 8px; background: #303134; color: white; border: 1px solid #8ab4f8;">
+
+        <!-- KHUNG CHAT AI -->
         <div class="card" style="border: 2px solid #9c27b0; background-color: #2d1b36; margin-bottom: 20px;">
             <h3 style="color: #e1bee7; margin-top: 0;">💬 Trợ lý AI Đa Năng</h3>
             <p style="font-size: 14px; color: #d1c4e9; margin-bottom: 10px;">Nhắn tin để nhờ AI soạn câu hỏi, dịch sang LaTeX, hoặc ra lệnh tự động điền form.</p>
@@ -24,7 +27,6 @@
             <div id="chat-history" style="height: 300px; overflow-y: auto; background: #1e1e1e; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #5f6368; display: flex; flex-direction: column; gap: 15px;">
                 <div style="background: #3c4043; color: white; padding: 10px 15px; border-radius: 15px; border-top-left-radius: 0; align-self: flex-start; max-width: 85%; font-size: 15px;">
                     Xin chào! Em là Trợ lý AI Tự Hành. Thầy/Cô cần em giúp gì ạ?
-<br><br>💡 <b>Mẹo:</b> Thầy cô có thể chat <i>"Hãy dịch và điền câu hỏi lộn xộn sau vào form cho tôi: [nội dung]"</i>, em sẽ tự động "thò tay" gõ phím điền form ở dưới thay cho thầy cô nhé!
                 </div>
             </div>
 
@@ -70,7 +72,7 @@
             </div>
         </div>
 
-        <!-- ĐÚNG SAI (NHIỀU Ô) -->
+        <!-- ĐÚNG SAI -->
         <div id="dung-sai-group" style="display: none;">
             <p style="color:#8ab4f8; margin-top:0;">* Tích chọn vào những ý là phát biểu ĐÚNG:</p>
             <div style="background: #202124; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
@@ -111,15 +113,21 @@
 
         <div id="preview-area" style="margin: 20px 0;"></div>
 
-        <button id="btn-save" style="background-color: #4caf50; color: white;">Lưu và tạo Link</button>
+        <button id="btn-save" style="background-color: #4caf50; color: white;">Lưu đề thi và tạo Link</button>
         <p id="link-result"></p>
     </div>
 
+    <!-- NƠI LÀM BÀI -->
     <div id="quiz-panel" style="display:none;">
         <div id="quiz-content"></div>
     </div>
+    
+    <!-- BẢNG XẾP HẠNG -->
+    <div id="leaderboard-panel" style="display:none; margin-top: 20px;">
+        <div id="leaderboard-content"></div>
+        <button onclick="location.reload()" style="background:#8ab4f8; color:#202124; margin-top:15px; width:100%;">Làm lại đề thi</button>
+    </div>
 
-    <!-- ÉP TRÌNH DUYỆT CẬP NHẬT CODE MỚI -->
-    <script type="module" src="script.js?v=4"></script>
+    <script type="module" src="script.js?v=7"></script>
 </body>
 </html>
