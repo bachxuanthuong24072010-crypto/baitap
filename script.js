@@ -260,7 +260,7 @@ function renderCurrentQuestion() {
 }
 
 // ==========================================
-// TÍNH NĂNG TRỢ LÝ AI (ĐÃ NÂNG CẤP XỬ LÝ TOÁN LÝ HÓA)
+// TÍNH NĂNG TRỢ LÝ AI (BẢN ĐỈNH NHẤT 3.8 FLASH)
 // ==========================================
 const rawTextInput = document.getElementById('ai-raw-text');
 const btnAiParse = document.getElementById('btn-ai-parse');
@@ -299,7 +299,8 @@ CHÚ Ý: Chỉ trả về ĐÚNG 1 chuỗi JSON hợp lệ, không bọc trong d
         `;
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${MY_GEMINI_API_KEY}`, {
+            // Đã đổi sang gemini-3.8-flash bản thông minh nhất
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
