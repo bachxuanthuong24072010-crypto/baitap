@@ -97,9 +97,9 @@ function renderPreview() {
         html += `<div style="border-left: 4px solid #8ab4f8; background: #202124; padding: 15px; margin-top: 15px; border-radius: 8px;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                         <strong style="color:#8ab4f8">Câu ${i + 1}:</strong>
-                        <button onclick="window.danhSachCauHoi.splice(${i}, 1); renderPreview();" style="width:auto; padding:4px 8px; background:#f44336; color:white; font-size:12px; margin:0;">Xóa câu này</button>
+                        <button onclick="window.danhSachCauHoi.splice(${i}, 1); renderPreview();" style="width:auto; padding:4px 8px; background:#f44336; color:white; font-size:12px; margin:0; border:none; border-radius:4px; cursor:pointer;">Xóa câu này</button>
                     </div>
-                    <textarea onchange="window.danhSachCauHoi[${i}].question = this.value">${cau.question}</textarea>`;
+                    <textarea onchange="window.danhSachCauHoi[${i}].question = this.value" style="width:100%; margin-bottom:10px;">${cau.question}</textarea>`;
 
         if (cau.type === "trac-nghiem") {
             cau.options.forEach((opt, j) => {
@@ -107,7 +107,7 @@ function renderPreview() {
                 html += `<div style="display:flex; align-items:center; margin-bottom:5px;">
                             <input type="radio" name="edit-correct-${i}" ${checked} style="width:auto; margin-right:10px;" 
                                 onchange="window.danhSachCauHoi[${i}].options.forEach(o => o.isCorrect = false); window.danhSachCauHoi[${i}].options[${j}].isCorrect = true;">
-                            <input type="text" value="${opt.text}" style="margin:0;" onchange="window.danhSachCauHoi[${i}].options[${j}].text = this.value">
+                            <input type="text" value="${opt.text}" style="margin:0; width:100%;" onchange="window.danhSachCauHoi[${i}].options[${j}].text = this.value">
                         </div>`;
             });
         } else if (cau.type === "dung-sai") {
@@ -116,11 +116,11 @@ function renderPreview() {
                 html += `<div style="display:flex; align-items:center; margin-bottom:5px;">
                             <input type="checkbox" ${checked} style="width:auto; margin-right:10px;"
                                 onchange="window.danhSachCauHoi[${i}].statements[${j}].isTrue = this.checked">
-                            <input type="text" value="${stmt.text}" style="margin:0;" onchange="window.danhSachCauHoi[${i}].statements[${j}].text = this.value">
+                            <input type="text" value="${stmt.text}" style="margin:0; width:100%;" onchange="window.danhSachCauHoi[${i}].statements[${j}].text = this.value">
                         </div>`;
             });
         } else {
-            html += `<input type="text" value="${cau.answerKey}" placeholder="Đáp án đúng..." onchange="window.danhSachCauHoi[${i}].answerKey = this.value" style="margin-top:5px;">`;
+            html += `<input type="text" value="${cau.answerKey}" placeholder="Đáp án đúng..." onchange="window.danhSachCauHoi[${i}].answerKey = this.value" style="margin-top:5px; width:100%;">`;
         }
         html += `</div>`;
     });
@@ -146,7 +146,6 @@ document.getElementById('btn-save').addEventListener('click', async () => {
             leaderboard: [] 
         });
         
-        // Rút gọn link
         saveBtn.innerText = "Đang nén Link cho ngắn lại...";
         const longLink = `${window.location.origin + window.location.pathname}?id=${docRef.id}`;
         let finalLink = longLink;
@@ -227,7 +226,7 @@ function renderCurrentQuestion() {
                     <p style="margin-top: 0; color: #e8eaed;">Lưu kết quả của bạn vào Bảng Thống Kê</p>
                     <input type="text" id="student-name" placeholder="Nhập Họ Tên / Lớp của bạn..." style="padding: 12px; width: 90%; border-radius: 8px; margin-bottom: 15px; font-size: 16px;">
                     <br>
-                    <button id="btn-save-score" style="background: #4caf50; color: white; padding: 12px 25px; font-size: 16px; border-radius: 8px;">Lưu & Xem Thống Kê</button>
+                    <button id="btn-save-score" style="background: #4caf50; color: white; padding: 12px 25px; font-size: 16px; border-radius: 8px; border:none; cursor:pointer;">Lưu & Xem Thống Kê</button>
                 </div>
             </div>
         `;
@@ -271,12 +270,12 @@ function renderCurrentQuestion() {
             const letter = String.fromCharCode(65 + i); 
             html += `<div class="card option dung-sai-opt" data-id="${i}" style="display: flex; align-items: center; justify-content: flex-start; gap: 10px;"><input type="checkbox" id="student-cb-${i}" style="width: 20px; height: 20px; cursor: pointer; margin: 0;"><label for="student-cb-${i}" style="cursor: pointer; flex: 1; margin: 0;"><strong>${letter}.</strong> ${stmt.text}</label></div>`;
         });
-        html += `<button id="btn-check-ds" style="background:#fbbc04; color:#202124;">Xác nhận đáp án</button>`;
+        html += `<button id="btn-check-ds" style="background:#fbbc04; color:#202124; border:none; padding:10px 15px; border-radius:4px; cursor:pointer;">Xác nhận đáp án</button>`;
     } else {
-        html += `<input type="text" id="short-ans-input" placeholder="Nhập đáp án của bạn..." style="margin-bottom:10px;"><button id="btn-check-short" style="background:#fbbc04; color:#202124;">Kiểm tra đáp án</button><div id="short-ans-result" style="margin-top:10px; font-weight:bold;"></div>`;
+        html += `<input type="text" id="short-ans-input" placeholder="Nhập đáp án của bạn..." style="margin-bottom:10px; padding:10px; width:100%;"><button id="btn-check-short" style="background:#fbbc04; color:#202124; border:none; padding:10px 15px; border-radius:4px; cursor:pointer; width:100%;">Kiểm tra đáp án</button><div id="short-ans-result" style="margin-top:10px; font-weight:bold;"></div>`;
     }
 
-    html += `<button id="btn-next" style="margin-top: 15px; width: 100%; padding: 14px; font-size: 16px;">Chuyển câu tiếp</button>`;
+    html += `<button id="btn-next" style="margin-top: 15px; width: 100%; padding: 14px; font-size: 16px; background:#8ab4f8; color:#202124; border:none; border-radius:4px; cursor:pointer;">Chuyển câu tiếp</button>`;
     container.innerHTML = html;
 
     if (typeof renderMathInElement === "function") {
@@ -386,100 +385,4 @@ async function showLeaderboard(id) {
     } catch(e) {
         lbContent.innerHTML = "Lỗi tải dữ liệu: " + e.message;
     }
-}
-
-// AI CHATBOT BẢN 2.5 (KHÔNG BAO GIỜ HẾT LƯỢT HỎI)
-const chatInput = document.getElementById('chat-input');
-const btnChatSend = document.getElementById('btn-chat-send');
-const chatHistoryBox = document.getElementById('chat-history');
-const _p1 = "AQ.Ab8RN6KATwc"; const _p2 = "iao_L06TOdHldaO"; const _p3 = "6YSeZdYx5QB3f3RRFMHpZE2A";
-const MY_GEMINI_API_KEY = _p1 + _p2 + _p3;
-const thoiGianHienTai = new Date().toLocaleString('vi-VN');
-
-let conversationContext = [
-    {
-        "role": "user",
-        "parts": [{ "text": `Bạn là AI Agent giáo dục. Thông tin hệ thống: Hôm nay là ${thoiGianHienTai}. Bạn có khả năng chat bình thường và có quyền Gọi Hàm (Function Calling) để điền form. 
-LƯU Ý CỰC KỲ QUAN TRỌNG: 
-1. Bất cứ khi nào người dùng yêu cầu tạo câu hỏi, bạn PHẢI GỌI HÀM fill_quiz_form. 
-2. Nếu người dùng yêu cầu tạo NHIỀU câu hỏi (Ví dụ: tạo 3 câu, 5 câu), bạn BẮT BUỘC PHẢI GỌI HÀM fill_quiz_form NHIỀU LẦN LIÊN TỤC trong cùng một lượt trả lời (mỗi câu hỏi tương ứng với 1 lần gọi hàm).
-3. Mọi công thức Toán, Lý, Hóa trong đề bài và đáp án phải được dịch sang LaTeX và bọc trong cặp dấu $$...$$.` }]
-    },
-    { "role": "model", "parts": [{ "text": "Đã rõ lệnh! Em có thể gọi hàm liên tục để tạo ra bao nhiêu câu hỏi tùy ý Thầy/Cô ạ." }] }
-];
-
-const aiTools = [{
-    functionDeclarations: [{
-        name: "fill_quiz_form", description: "Gọi hàm này ĐỂ TỰ ĐỘNG ĐIỀN câu hỏi và đáp án vào form.",
-        parameters: {
-            type: "OBJECT",
-            properties: {
-                type: { type: "STRING" }, question: { type: "STRING" }, options: { type: "ARRAY", items: { type: "STRING" } },
-                correctIndex: { type: "INTEGER" },
-                statements: { type: "ARRAY", items: { type: "OBJECT", properties: { text: { type: "STRING" }, isTrue: { type: "BOOLEAN" } } } },
-                answerKey: { type: "STRING" }
-            },
-            required: ["type", "question"]
-        }
-    }]
-}];
-
-function appendMessage(sender, text) {
-    if (!chatHistoryBox) return null;
-    const msgDiv = document.createElement('div');
-    msgDiv.style.padding = '10px 15px'; msgDiv.style.borderRadius = '15px'; msgDiv.style.maxWidth = '85%'; msgDiv.style.fontSize = '15px'; msgDiv.style.lineHeight = '1.4'; msgDiv.style.whiteSpace = 'pre-wrap'; msgDiv.style.marginBottom = '15px';
-    if (sender === 'user') { msgDiv.style.background = '#8ab4f8'; msgDiv.style.color = '#202124'; msgDiv.style.borderTopRightRadius = '0'; msgDiv.style.alignSelf = 'flex-end';
-    } else { msgDiv.style.background = '#3c4043'; msgDiv.style.color = 'white'; msgDiv.style.borderTopLeftRadius = '0'; msgDiv.style.alignSelf = 'flex-start'; }
-    msgDiv.innerText = text; chatHistoryBox.appendChild(msgDiv); chatHistoryBox.scrollTop = chatHistoryBox.scrollHeight;
-    if (typeof renderMathInElement === "function") renderMathInElement(msgDiv, { delimiters: [{left: "$$", right: "$$", display: false}] });
-    return msgDiv;
-}
-
-function executeFillForm(args) {
-    try {
-        document.getElementById('question-type').value = args.type; document.getElementById('question-type').dispatchEvent(new Event('change')); document.getElementById('question').value = args.question || '';
-        if (args.type === 'trac-nghiem' && args.options) {
-            ['a','b','c','d'].forEach((id, idx) => document.getElementById(`opt-${id}`).value = args.options[idx] || '');
-            const radios = document.querySelectorAll('input[name="correct-answer"]'); radios.forEach(r => r.checked = false);
-            if(args.correctIndex !== undefined && radios[args.correctIndex]) radios[args.correctIndex].checked = true;
-        } else if (args.type === 'dung-sai' && args.statements) {
-            ['a','b','c','d'].forEach((id, i) => { if (i < 4) { document.getElementById(`ds-opt-${id}`).value = args.statements[i].text || ''; document.getElementById(`ds-ans-${id}`).checked = args.statements[i].isTrue || false; } });
-        } else if (args.type === 'tra-loi-ngan') document.getElementById('answer-key').value = args.answerKey || '';
-        return true;
-    } catch (e) { return false; }
-}
-
-if (btnChatSend) {
-    btnChatSend.addEventListener('click', async () => {
-        const userText = chatInput.value.trim(); if (!userText) return; chatInput.value = ''; appendMessage('user', userText);
-        const loadingMsg = appendMessage('model', '⏳ Đang phân tích...');
-        conversationContext.push({ "role": "user", "parts": [{ "text": userText }] });
-
-        try {
-            // ĐÃ CHUYỂN SANG 2.5 FLASH Ở ĐÂY ĐỂ TRÁNH LỖI QUOTA
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
-                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: conversationContext, tools: aiTools })
-            });
-            const data = await response.json(); if (data.error) throw new Error(data.error.message); 
-            loadingMsg.remove();
-            
-            const message = data.candidates[0].content; conversationContext.push(message);
-            let addedCount = 0; let functionResponses = [];
-
-            for (let part of message.parts) {
-                if (part.text) appendMessage('model', part.text);
-                if (part.functionCall && part.functionCall.name === "fill_quiz_form") {
-                    if (executeFillForm(part.functionCall.args)) {
-                        document.getElementById('btn-add').click(); addedCount++;
-                        functionResponses.push({ "functionResponse": { "name": "fill_quiz_form", "response": { "result": "Thành công" } } });
-                    }
-                }
-            }
-            if (functionResponses.length > 0) {
-                conversationContext.push({ "role": "user", "parts": functionResponses });
-                appendMessage('model', `🤖 [Hành động]: Đã tạo và tự động thêm ${addedCount} câu hỏi vào Danh Sách bên dưới!`);
-            }
-        } catch (error) { loadingMsg.innerText = "❌ Có lỗi xảy ra: " + error.message; conversationContext.pop(); }
-    });
-    chatInput.addEventListener('keypress', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); btnChatSend.click(); } });
 }
