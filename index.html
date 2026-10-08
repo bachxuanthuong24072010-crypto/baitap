@@ -40,9 +40,28 @@
     <div id="admin-panel" style="display:none; max-width: 700px; margin: auto; padding: 20px;">
         <h1 style="text-align: center; color: #8ab4f8; font-size: 32px; margin-bottom: 25px;">Tạo đề thi mới</h1>
         
+        <!-- TÍNH NĂNG NHẬP NHANH -->
+        <div style="background: #2a2b2f; padding: 20px; border-radius: 6px; border: 1px dashed #fbbc04; margin-bottom: 25px;">
+            <h3 id="toggle-bulk" style="margin-top: 0; color: #fbbc04; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                <span>⚡ Nhập nhanh hàng loạt từ văn bản (Bấm để mở)</span>
+                <span id="bulk-icon">▼</span>
+            </h3>
+            <div id="bulk-area" style="display: none; margin-top: 15px;">
+                <p style="font-size: 14px; color: #e8eaed; margin-bottom: 10px; line-height: 1.5;">Dùng tài khoản <b>Gemini PRO</b> của bạn nhờ nó soạn câu hỏi trắc nghiệm theo đúng mẫu dưới đây, sau đó Copy và Dán toàn bộ vào ô trống bên dưới để nhập 1 lần 50-100 câu:</p>
+                <pre style="background: #202124; padding: 12px; color: #8ab4f8; font-size: 14px; border-radius: 6px; overflow-x: auto; margin-bottom: 15px; border: 1px solid #5f6368; line-height: 1.5;">Câu 1: Thủ đô của Việt Nam là?
+A. Hà Nội
+B. Huế
+C. Đà Nẵng
+D. TP HCM
+Đáp án: A</pre>
+                <textarea id="bulk-input" class="input-box" rows="8" placeholder="Dán văn bản có chứa câu hỏi vào đây..."></textarea>
+                <button id="btn-bulk-add" class="btn-blue" style="background: #fbbc04; color: #202124;">⚡ Xử lý và Thêm hàng loạt</button>
+            </div>
+        </div>
+
         <input type="text" id="quiz-title" class="input-box" placeholder="Nhập tên Đề thi (VD: Kiểm tra 15p Toán Hình)...">
         
-        <!-- Bảng điều khiển Form -->
+        <!-- NHẬP THỦ CÔNG (Cho ai thích thêm từng câu) -->
         <select id="question-type" class="input-box" style="margin-bottom: 20px;">
             <option value="trac-nghiem">Trắc nghiệm 1 đáp án</option>
             <option value="dung-sai">Trắc nghiệm Đúng/Sai</option>
@@ -51,90 +70,55 @@
         
         <textarea id="question" class="input-box" placeholder="Nhập câu hỏi (Bao công thức trong $$, VD: $$2SO_2$$)" rows="4" style="margin-bottom: 25px; line-height: 1.5;"></textarea>
         
-        <!-- NHÓM TRẮC NGHIỆM -->
         <div id="trac-nghiem-group">
             <div style="margin-bottom: 20px;">
-                <label class="answer-label">
-                    <input type="radio" name="correct-answer" value="0" checked> ĐÁP ÁN A ĐÚNG
-                </label>
+                <label class="answer-label"><input type="radio" name="correct-answer" value="0" checked> ĐÁP ÁN A ĐÚNG</label>
                 <input type="text" id="opt-a" class="input-box" style="margin-bottom: 0;">
             </div>
-            
             <div style="margin-bottom: 20px;">
-                <label class="answer-label">
-                    <input type="radio" name="correct-answer" value="1"> ĐÁP ÁN B ĐÚNG
-                </label>
+                <label class="answer-label"><input type="radio" name="correct-answer" value="1"> ĐÁP ÁN B ĐÚNG</label>
                 <input type="text" id="opt-b" class="input-box" style="margin-bottom: 0;">
             </div>
-
             <div style="margin-bottom: 20px;">
-                <label class="answer-label">
-                    <input type="radio" name="correct-answer" value="2"> ĐÁP ÁN C ĐÚNG
-                </label>
+                <label class="answer-label"><input type="radio" name="correct-answer" value="2"> ĐÁP ÁN C ĐÚNG</label>
                 <input type="text" id="opt-c" class="input-box" style="margin-bottom: 0;">
             </div>
-
             <div style="margin-bottom: 25px;">
-                <label class="answer-label">
-                    <input type="radio" name="correct-answer" value="3"> ĐÁP ÁN D ĐÚNG
-                </label>
+                <label class="answer-label"><input type="radio" name="correct-answer" value="3"> ĐÁP ÁN D ĐÚNG</label>
                 <input type="text" id="opt-d" class="input-box" style="margin-bottom: 0;">
             </div>
         </div>
         
-        <!-- NHÓM ĐÚNG SAI -->
         <div id="dung-sai-group" style="display:none;">
-            <div style="margin-bottom: 20px;">
-                <label class="answer-label">
-                    <input type="checkbox" id="ds-ans-a"> MỆNH ĐỀ A ĐÚNG
-                </label>
-                <input type="text" id="ds-opt-a" class="input-box" style="margin-bottom: 0;">
-            </div>
-            <div style="margin-bottom: 20px;">
-                <label class="answer-label">
-                    <input type="checkbox" id="ds-ans-b"> MỆNH ĐỀ B ĐÚNG
-                </label>
-                <input type="text" id="ds-opt-b" class="input-box" style="margin-bottom: 0;">
-            </div>
-            <div style="margin-bottom: 20px;">
-                <label class="answer-label">
-                    <input type="checkbox" id="ds-ans-c"> MỆNH ĐỀ C ĐÚNG
-                </label>
-                <input type="text" id="ds-opt-c" class="input-box" style="margin-bottom: 0;">
-            </div>
-            <div style="margin-bottom: 25px;">
-                <label class="answer-label">
-                    <input type="checkbox" id="ds-ans-d"> MỆNH ĐỀ D ĐÚNG
-                </label>
-                <input type="text" id="ds-opt-d" class="input-box" style="margin-bottom: 0;">
-            </div>
+            <div style="margin-bottom: 20px;"><label class="answer-label"><input type="checkbox" id="ds-ans-a"> MỆNH ĐỀ A ĐÚNG</label><input type="text" id="ds-opt-a" class="input-box" style="margin-bottom: 0;"></div>
+            <div style="margin-bottom: 20px;"><label class="answer-label"><input type="checkbox" id="ds-ans-b"> MỆNH ĐỀ B ĐÚNG</label><input type="text" id="ds-opt-b" class="input-box" style="margin-bottom: 0;"></div>
+            <div style="margin-bottom: 20px;"><label class="answer-label"><input type="checkbox" id="ds-ans-c"> MỆNH ĐỀ C ĐÚNG</label><input type="text" id="ds-opt-c" class="input-box" style="margin-bottom: 0;"></div>
+            <div style="margin-bottom: 25px;"><label class="answer-label"><input type="checkbox" id="ds-ans-d"> MỆNH ĐỀ D ĐÚNG</label><input type="text" id="ds-opt-d" class="input-box" style="margin-bottom: 0;"></div>
         </div>
         
-        <!-- NHÓM TRẢ LỜI NGẮN -->
         <div id="tra-loi-ngan-group" style="display:none; margin-bottom: 25px;">
             <label style="color: #4caf50; font-weight: bold; font-size: 15px; margin-bottom: 8px; display: block; text-transform: uppercase;">Nhập đáp án chính xác (VD: 5, x=2)</label>
             <input type="text" id="answer-key" class="input-box" style="margin-bottom: 0;">
         </div>
         
-        <button id="btn-add" class="btn-blue">Thêm câu hỏi này</button>
+        <button id="btn-add" class="btn-blue">Thêm câu hỏi này (Thủ công)</button>
 
+        <!-- KHU VỰC XEM TRƯỚC VÀ LƯU -->
         <div id="preview-area" style="margin-top: 25px;"></div>
         
         <button id="btn-save" class="btn-green">Lưu đề thi và tạo Link</button>
         <div id="link-result" style="margin-top: 15px; text-align: center;"></div>
     </div>
 
-    <!-- KHU VỰC HỌC SINH LÀM BÀI -->
     <div id="quiz-panel" style="display:none; max-width: 800px; margin: auto; padding: 20px;">
         <div id="quiz-content"></div>
     </div>
 
-    <!-- KHU VỰC BẢNG XẾP HẠNG -->
     <div id="leaderboard-panel" style="display:none; max-width: 800px; margin: auto; padding: 20px;">
         <div id="leaderboard-content"></div>
         <button onclick="location.reload()" style="margin-top: 20px; width: 100%; background: #5f6368; padding: 12px; border-radius: 8px; color: white; border: none; font-size: 16px; cursor: pointer;">Tạo bài tập khác</button>
     </div>
 
-    <script type="module" src="script.js?v=15"></script>
+    <script type="module" src="script.js?v=16"></script>
 </body>
 </html>
