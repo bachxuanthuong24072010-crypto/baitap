@@ -33,9 +33,6 @@ if (quizId) {
     document.getElementById('admin-panel').style.display = 'block';
 }
 
-// ----------------------------------------------------
-// TÍNH NĂNG NHẬP NHANH TỪ VĂN BẢN
-// ----------------------------------------------------
 const toggleBulk = document.getElementById('toggle-bulk');
 if (toggleBulk) {
     toggleBulk.addEventListener('click', () => {
@@ -55,7 +52,6 @@ if (btnBulkAdd) {
         let textRaw = document.getElementById('bulk-input').value.trim();
         if (!textRaw) return alert("Vui lòng dán văn bản câu hỏi vào ô nhé!");
 
-        // 🌟 BỘ LỌC KHỬ DÍNH CHỮ: Tự động ngắt dòng trước Câu, A, B, C, D, Đáp án
         let text = textRaw.replace(/([^\n])(Câu\s*\d+:|Bài\s*\d+:|A\.|B\.|C\.|D\.|Đáp án:)/gi, '$1\n$2');
 
         const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
@@ -143,9 +139,7 @@ if (btnBulkAdd) {
         }
     });
 }
-// ----------------------------------------------------
 
-// CẬP NHẬT GIAO DIỆN KHI ĐỔI LOẠI CÂU HỎI
 const questionType = document.getElementById('question-type');
 if (questionType) {
     function updateFormDisplay() {
@@ -246,8 +240,17 @@ function renderPreview() {
         html += `</div>`;
     });
     document.getElementById('preview-area').innerHTML = html;
+    
+    // NÂNG CẤP DỊCH MỌI KÝ HIỆU TOÁN (1 DẤU $ HOẶC 2 DẤU $$)
     if (typeof renderMathInElement === "function") {
-        renderMathInElement(document.getElementById('preview-area'), { delimiters: [{left: "$$", right: "$$", display: false}] });
+        renderMathInElement(document.getElementById('preview-area'), { 
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "\\[", right: "\\]", display: true},
+                {left: "$", right: "$", display: false},
+                {left: "\\(", right: "\\)", display: false}
+            ]
+        });
     }
 }
 window.renderPreview = renderPreview;
@@ -399,8 +402,16 @@ function renderCurrentQuestion() {
     html += `<button id="btn-next" style="margin-top: 15px; width: 100%; padding: 14px; font-size: 16px; background:#8ab4f8; color:#202124; border:none; border-radius:4px; cursor:pointer;">Chuyển câu tiếp</button>`;
     container.innerHTML = html;
 
+    // NÂNG CẤP DỊCH MỌI KÝ HIỆU TOÁN (1 DẤU $ HOẶC 2 DẤU $$)
     if (typeof renderMathInElement === "function") {
-        renderMathInElement(container, { delimiters: [{left: "$$", right: "$$", display: false}] });
+        renderMathInElement(container, { 
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "\\[", right: "\\]", display: true},
+                {left: "$", right: "$", display: false},
+                {left: "\\(", right: "\\)", display: false}
+            ]
+        });
     }
 
     let answered = false;
