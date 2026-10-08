@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Web Câu Hỏi</title>
     
-    <!-- ĐÃ ĐỔI TÊN THÀNH LOGO.JPG THEO Ý BẠN -->
     <link rel="icon" type="image/jpeg" href="logo.jpg?v=3">
 
     <link rel="stylesheet" href="style.css">
@@ -17,6 +16,18 @@
     <div id="admin-panel" style="display:none;">
         <h2>Tạo câu hỏi</h2>
         
+        <!-- ================= KHU VỰC TRỢ LÝ AI ================= -->
+        <div style="background: #2b1b3d; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #9c27b0;">
+            <h3 style="color: #e040fb; margin-top: 0; margin-bottom: 15px;">✨ Trợ lý AI tự động điền</h3>
+            
+            <!-- Đã ẩn ô nhập API Key vì đã được gắn sẵn trong code -->
+            <textarea id="ai-raw-text" rows="4" placeholder="Dán 1 câu hỏi thô vào đây...&#10;Ví dụ: Câu 1: Con nhện có mấy chân? A. 2  B. 4  C. 6  D. 8. Đáp án: D"></textarea>
+            
+            <button id="btn-ai-parse" style="background-color: #9c27b0; color: white;">🚀 Nhờ AI tách câu hỏi</button>
+            <div id="ai-status" style="color: #fbc02d; margin-top: 10px; font-weight: bold; font-size: 14px;"></div>
+        </div>
+        <!-- ================= KẾT THÚC KHU VỰC AI ================= -->
+
         <select id="question-type" style="width:100%; margin-bottom:10px; padding:10px; background:#303134; color:white; border-radius:8px;">
             <option value="trac-nghiem">Trắc nghiệm 1 đáp án</option>
             <option value="dung-sai">Đúng / Sai (Tích nhiều ô)</option>
@@ -102,6 +113,6 @@
         <div id="quiz-content"></div>
     </div>
 
-    <script type="module" src="script.js?v=2"></script>
+    <script type="module" src="script.js?v=5"></script>
 </body>
 </html>
