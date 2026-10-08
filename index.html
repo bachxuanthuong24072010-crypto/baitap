@@ -12,26 +12,12 @@
     
     <style>
         body { background-color: #202124; color: white; font-family: Arial, sans-serif; }
-        
-        .input-box { 
-            width: 100%; padding: 14px; margin-bottom: 15px; 
-            background: #2a2b2f; border: 1px solid #5f6368; 
-            color: white; border-radius: 6px; box-sizing: border-box; font-size: 15px;
-        }
+        .input-box { width: 100%; padding: 14px; margin-bottom: 15px; background: #2a2b2f; border: 1px solid #5f6368; color: white; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
         .input-box:focus { border-color: #8ab4f8; outline: none; }
-        
-        .answer-label {
-            display: flex; align-items: center; cursor: pointer; 
-            margin-bottom: 8px; color: #4caf50; font-weight: bold; 
-            font-size: 15px; text-transform: uppercase;
-        }
-        .answer-label input[type="radio"], .answer-label input[type="checkbox"] {
-            margin-right: 10px; transform: scale(1.2); cursor: pointer;
-        }
-        
+        .answer-label { display: flex; align-items: center; cursor: pointer; margin-bottom: 8px; color: #4caf50; font-weight: bold; font-size: 15px; text-transform: uppercase; }
+        .answer-label input[type="radio"], .answer-label input[type="checkbox"] { margin-right: 10px; transform: scale(1.2); cursor: pointer; }
         .btn-blue { background: #8ab4f8; color: #202124; padding: 12px; width: 100%; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
         .btn-blue:hover { background: #aecbfa; }
-        
         .btn-green { background: #4caf50; color: white; padding: 15px; width: 100%; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; }
         .btn-green:hover { background: #45a049; }
     </style>
@@ -40,53 +26,57 @@
     <div id="admin-panel" style="display:none; max-width: 700px; margin: auto; padding: 20px;">
         <h1 style="text-align: center; color: #8ab4f8; font-size: 32px; margin-bottom: 25px;">Tạo đề thi mới</h1>
         
-        <!-- TÍNH NĂNG NHẬP NHANH -->
+        <!-- TÍNH NĂNG NHẬP NHANH ĐÃ NÂNG CẤP -->
         <div style="background: #2a2b2f; padding: 20px; border-radius: 6px; border: 1px dashed #fbbc04; margin-bottom: 25px;">
             <h3 id="toggle-bulk" style="margin-top: 0; color: #fbbc04; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                 <span>⚡ Nhập nhanh hàng loạt từ văn bản (Bấm để mở)</span>
                 <span id="bulk-icon">▼</span>
             </h3>
             <div id="bulk-area" style="display: none; margin-top: 15px;">
-                <p style="font-size: 14px; color: #e8eaed; margin-bottom: 10px; line-height: 1.5;">Dùng tài khoản <b>Gemini PRO</b> của bạn nhờ nó soạn câu hỏi trắc nghiệm theo đúng mẫu dưới đây, sau đó Copy và Dán toàn bộ vào ô trống bên dưới để nhập 1 lần 50-100 câu:</p>
-                <pre style="background: #202124; padding: 12px; color: #8ab4f8; font-size: 14px; border-radius: 6px; overflow-x: auto; margin-bottom: 15px; border: 1px solid #5f6368; line-height: 1.5;">Câu 1: Thủ đô của Việt Nam là?
-A. Hà Nội
-B. Huế
-C. Đà Nẵng
-D. TP HCM
+                <p style="font-size: 14px; color: #e8eaed; margin-bottom: 10px; line-height: 1.5;">Web tự động nhận diện cả 3 loại câu hỏi. <b>Mẫu chuẩn để bạn copy nhờ AI viết:</b></p>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; font-size: 13px;">
+                    <pre style="flex: 1; background: #202124; padding: 10px; color: #8ab4f8; border: 1px solid #5f6368; border-radius: 6px; overflow-x: auto; white-space: pre-wrap;">[1 ĐÁP ÁN]
+Câu 1: A là gì?
+A. Số 1
+B. Số 2
+C. Số 3
+D. Số 4
 Đáp án: A</pre>
-                <textarea id="bulk-input" class="input-box" rows="8" placeholder="Dán văn bản có chứa câu hỏi vào đây..."></textarea>
+                    <pre style="flex: 1; background: #202124; padding: 10px; color: #fbbc04; border: 1px solid #5f6368; border-radius: 6px; overflow-x: auto; white-space: pre-wrap;">[ĐÚNG / SAI]
+Câu 2: Đ/S?
+A. 1+1=3
+B. Mèo kêu
+C. Chó bơi
+D. Gà bay
+Đáp án: S, Đ, S, S</pre>
+                    <pre style="flex: 1; background: #202124; padding: 10px; color: #4caf50; border: 1px solid #5f6368; border-radius: 6px; overflow-x: auto; white-space: pre-wrap;">[TL NGẮN]
+Câu 3: Giải pt:
+x + 2 = 5
+nghiệm là?
+
+Đáp án: x = 3</pre>
+                </div>
+                <textarea id="bulk-input" class="input-box" rows="8" placeholder="Dán toàn bộ văn bản trộn lẫn các câu hỏi vào đây..."></textarea>
                 <button id="btn-bulk-add" class="btn-blue" style="background: #fbbc04; color: #202124;">⚡ Xử lý và Thêm hàng loạt</button>
             </div>
         </div>
 
         <input type="text" id="quiz-title" class="input-box" placeholder="Nhập tên Đề thi (VD: Kiểm tra 15p Toán Hình)...">
         
-        <!-- NHẬP THỦ CÔNG (Cho ai thích thêm từng câu) -->
+        <!-- NHẬP THỦ CÔNG -->
         <select id="question-type" class="input-box" style="margin-bottom: 20px;">
             <option value="trac-nghiem">Trắc nghiệm 1 đáp án</option>
             <option value="dung-sai">Trắc nghiệm Đúng/Sai</option>
             <option value="tra-loi-ngan">Câu hỏi Trả lời ngắn</option>
         </select>
         
-        <textarea id="question" class="input-box" placeholder="Nhập câu hỏi (Bao công thức trong $$, VD: $$2SO_2$$)" rows="4" style="margin-bottom: 25px; line-height: 1.5;"></textarea>
+        <textarea id="question" class="input-box" placeholder="Nhập câu hỏi thủ công (nếu cần)..." rows="4" style="margin-bottom: 25px; line-height: 1.5;"></textarea>
         
         <div id="trac-nghiem-group">
-            <div style="margin-bottom: 20px;">
-                <label class="answer-label"><input type="radio" name="correct-answer" value="0" checked> ĐÁP ÁN A ĐÚNG</label>
-                <input type="text" id="opt-a" class="input-box" style="margin-bottom: 0;">
-            </div>
-            <div style="margin-bottom: 20px;">
-                <label class="answer-label"><input type="radio" name="correct-answer" value="1"> ĐÁP ÁN B ĐÚNG</label>
-                <input type="text" id="opt-b" class="input-box" style="margin-bottom: 0;">
-            </div>
-            <div style="margin-bottom: 20px;">
-                <label class="answer-label"><input type="radio" name="correct-answer" value="2"> ĐÁP ÁN C ĐÚNG</label>
-                <input type="text" id="opt-c" class="input-box" style="margin-bottom: 0;">
-            </div>
-            <div style="margin-bottom: 25px;">
-                <label class="answer-label"><input type="radio" name="correct-answer" value="3"> ĐÁP ÁN D ĐÚNG</label>
-                <input type="text" id="opt-d" class="input-box" style="margin-bottom: 0;">
-            </div>
+            <div style="margin-bottom: 20px;"><label class="answer-label"><input type="radio" name="correct-answer" value="0" checked> ĐÁP ÁN A ĐÚNG</label><input type="text" id="opt-a" class="input-box" style="margin-bottom: 0;"></div>
+            <div style="margin-bottom: 20px;"><label class="answer-label"><input type="radio" name="correct-answer" value="1"> ĐÁP ÁN B ĐÚNG</label><input type="text" id="opt-b" class="input-box" style="margin-bottom: 0;"></div>
+            <div style="margin-bottom: 20px;"><label class="answer-label"><input type="radio" name="correct-answer" value="2"> ĐÁP ÁN C ĐÚNG</label><input type="text" id="opt-c" class="input-box" style="margin-bottom: 0;"></div>
+            <div style="margin-bottom: 25px;"><label class="answer-label"><input type="radio" name="correct-answer" value="3"> ĐÁP ÁN D ĐÚNG</label><input type="text" id="opt-d" class="input-box" style="margin-bottom: 0;"></div>
         </div>
         
         <div id="dung-sai-group" style="display:none;">
@@ -97,19 +87,19 @@ D. TP HCM
         </div>
         
         <div id="tra-loi-ngan-group" style="display:none; margin-bottom: 25px;">
-            <label style="color: #4caf50; font-weight: bold; font-size: 15px; margin-bottom: 8px; display: block; text-transform: uppercase;">Nhập đáp án chính xác (VD: 5, x=2)</label>
+            <label style="color: #4caf50; font-weight: bold; font-size: 15px; margin-bottom: 8px; display: block; text-transform: uppercase;">Nhập đáp án chính xác</label>
             <input type="text" id="answer-key" class="input-box" style="margin-bottom: 0;">
         </div>
         
         <button id="btn-add" class="btn-blue">Thêm câu hỏi này (Thủ công)</button>
 
-        <!-- KHU VỰC XEM TRƯỚC VÀ LƯU -->
         <div id="preview-area" style="margin-top: 25px;"></div>
         
         <button id="btn-save" class="btn-green">Lưu đề thi và tạo Link</button>
         <div id="link-result" style="margin-top: 15px; text-align: center;"></div>
     </div>
 
+    <!-- KHU VỰC HỌC SINH -->
     <div id="quiz-panel" style="display:none; max-width: 800px; margin: auto; padding: 20px;">
         <div id="quiz-content"></div>
     </div>
@@ -119,6 +109,6 @@ D. TP HCM
         <button onclick="location.reload()" style="margin-top: 20px; width: 100%; background: #5f6368; padding: 12px; border-radius: 8px; color: white; border: none; font-size: 16px; cursor: pointer;">Tạo bài tập khác</button>
     </div>
 
-    <script type="module" src="script.js?v=16"></script>
+    <script type="module" src="script.js?v=17"></script>
 </body>
 </html>
