@@ -260,7 +260,7 @@ function renderCurrentQuestion() {
 }
 
 // ==========================================
-// TÍNH NĂNG CHATBOT AI AGENT (ĐÃ ĐỔI SANG MODEL ỔN ĐỊNH GEMINI-1.5-FLASH)
+// TÍNH NĂNG CHATBOT AI AGENT (ĐÃ ĐỔI SANG BẢN XỊN GEMINI-3.5-FLASH)
 // ==========================================
 const chatInput = document.getElementById('chat-input');
 const btnChatSend = document.getElementById('btn-chat-send');
@@ -385,7 +385,7 @@ if (btnChatSend) {
         conversationContext.push({ "role": "user", "parts": [{ "text": userText }] });
 
         try {
-            // URL MỚI NHẤT DÙNG gemini-1.5-flash VỚI 1.500 LƯỢT HỎI/NGÀY
+            // URL DÙNG gemini-3.5-flash VỪA THÔNG MINH, VỪA KHÔNG BỊ GIỚI HẠN 20 LƯỢT
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
