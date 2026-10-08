@@ -5,65 +5,136 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tạo Đề Thi</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Thư viện LaTeX -->
+    <!-- Thư viện hiển thị công thức Toán -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    
+    <style>
+        body { background-color: #202124; color: white; font-family: Arial, sans-serif; }
+        
+        .input-box { 
+            width: 100%; padding: 14px; margin-bottom: 15px; 
+            background: #2a2b2f; border: 1px solid #5f6368; 
+            color: white; border-radius: 6px; box-sizing: border-box; font-size: 15px;
+        }
+        .input-box:focus { border-color: #8ab4f8; outline: none; }
+        
+        .answer-label {
+            display: flex; align-items: center; cursor: pointer; 
+            margin-bottom: 8px; color: #4caf50; font-weight: bold; 
+            font-size: 15px; text-transform: uppercase;
+        }
+        .answer-label input[type="radio"], .answer-label input[type="checkbox"] {
+            margin-right: 10px; transform: scale(1.2); cursor: pointer;
+        }
+        
+        .btn-blue { background: #8ab4f8; color: #202124; padding: 12px; width: 100%; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .btn-blue:hover { background: #aecbfa; }
+        
+        .btn-green { background: #4caf50; color: white; padding: 15px; width: 100%; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .btn-green:hover { background: #45a049; }
+    </style>
 </head>
 <body>
-    <div id="admin-panel" style="display:none; max-width: 800px; margin: auto; padding: 20px;">
-        <h1 style="text-align: center; color: #8ab4f8;">Tạo đề thi mới</h1>
-        <input type="text" id="quiz-title" placeholder="Nhập tên Đề thi (VD: Kiểm tra 15p Toán Hình)..." style="width: 100%; padding: 12px; margin-bottom: 20px; font-size: 16px; border-radius: 8px;">
+    <div id="admin-panel" style="display:none; max-width: 700px; margin: auto; padding: 20px;">
+        <h1 style="text-align: center; color: #8ab4f8; font-size: 32px; margin-bottom: 25px;">Tạo đề thi mới</h1>
         
-        <div class="card">
-            <select id="question-type" style="width: 100%; padding: 10px; margin-bottom: 15px; font-size: 16px;">
-                <option value="trac-nghiem">Trắc nghiệm 1 đáp án</option>
-                <option value="dung-sai">Trắc nghiệm Đúng/Sai</option>
-                <option value="tra-loi-ngan">Câu hỏi Trả lời ngắn</option>
-            </select>
-            
-            <textarea id="question" placeholder="Nhập câu hỏi (Bao công thức trong $$, VD: $$2SO_2$$)" rows="4" style="width: 100%; margin-bottom: 15px; font-size: 15px; padding: 10px;"></textarea>
-            
-            <div id="trac-nghiem-group">
-                <input type="text" id="opt-a" placeholder="Đáp án A" style="margin-bottom: 5px;"><br>
-                <input type="text" id="opt-b" placeholder="Đáp án B" style="margin-bottom: 5px;"><br>
-                <input type="text" id="opt-c" placeholder="Đáp án C" style="margin-bottom: 5px;"><br>
-                <input type="text" id="opt-d" placeholder="Đáp án D" style="margin-bottom: 10px;"><br>
-                <label style="color: #e8eaed; margin-right: 10px;">Đáp án đúng:</label>
-                <input type="radio" name="correct-answer" value="0"> A
-                <input type="radio" name="correct-answer" value="1"> B
-                <input type="radio" name="correct-answer" value="2"> C
-                <input type="radio" name="correct-answer" value="3"> D
+        <input type="text" id="quiz-title" class="input-box" placeholder="Nhập tên Đề thi (VD: Kiểm tra 15p Toán Hình)...">
+        
+        <!-- Bảng điều khiển Form -->
+        <select id="question-type" class="input-box" style="margin-bottom: 20px;">
+            <option value="trac-nghiem">Trắc nghiệm 1 đáp án</option>
+            <option value="dung-sai">Trắc nghiệm Đúng/Sai</option>
+            <option value="tra-loi-ngan">Câu hỏi Trả lời ngắn</option>
+        </select>
+        
+        <textarea id="question" class="input-box" placeholder="Nhập câu hỏi (Bao công thức trong $$, VD: $$2SO_2$$)" rows="4" style="margin-bottom: 25px; line-height: 1.5;"></textarea>
+        
+        <!-- NHÓM TRẮC NGHIỆM -->
+        <div id="trac-nghiem-group">
+            <div style="margin-bottom: 20px;">
+                <label class="answer-label">
+                    <input type="radio" name="correct-answer" value="0" checked> ĐÁP ÁN A ĐÚNG
+                </label>
+                <input type="text" id="opt-a" class="input-box" style="margin-bottom: 0;">
             </div>
             
-            <div id="dung-sai-group" style="display:none; color: #e8eaed;">
-                <div style="margin-bottom: 8px;">A. <input type="text" id="ds-opt-a" style="width: 80%;"><input type="checkbox" id="ds-ans-a" style="margin-left: 10px;"> Đúng</div>
-                <div style="margin-bottom: 8px;">B. <input type="text" id="ds-opt-b" style="width: 80%;"><input type="checkbox" id="ds-ans-b" style="margin-left: 10px;"> Đúng</div>
-                <div style="margin-bottom: 8px;">C. <input type="text" id="ds-opt-c" style="width: 80%;"><input type="checkbox" id="ds-ans-c" style="margin-left: 10px;"> Đúng</div>
-                <div style="margin-bottom: 8px;">D. <input type="text" id="ds-opt-d" style="width: 80%;"><input type="checkbox" id="ds-ans-d" style="margin-left: 10px;"> Đúng</div>
+            <div style="margin-bottom: 20px;">
+                <label class="answer-label">
+                    <input type="radio" name="correct-answer" value="1"> ĐÁP ÁN B ĐÚNG
+                </label>
+                <input type="text" id="opt-b" class="input-box" style="margin-bottom: 0;">
             </div>
-            
-            <div id="tra-loi-ngan-group" style="display:none;">
-                <input type="text" id="answer-key" placeholder="Nhập đáp án chính xác (VD: 5, x=2)" style="width: 100%; padding: 10px;">
-            </div>
-            
-            <button id="btn-add" style="margin-top: 15px; width: 100%; padding: 12px; font-size: 16px;">Thêm câu hỏi này</button>
-        </div>
 
-        <div id="preview-area"></div>
-        <button id="btn-save" style="margin-top: 20px; width: 100%; background: #4caf50; padding: 15px; font-size: 18px;">Lưu đề thi và tạo Link</button>
+            <div style="margin-bottom: 20px;">
+                <label class="answer-label">
+                    <input type="radio" name="correct-answer" value="2"> ĐÁP ÁN C ĐÚNG
+                </label>
+                <input type="text" id="opt-c" class="input-box" style="margin-bottom: 0;">
+            </div>
+
+            <div style="margin-bottom: 25px;">
+                <label class="answer-label">
+                    <input type="radio" name="correct-answer" value="3"> ĐÁP ÁN D ĐÚNG
+                </label>
+                <input type="text" id="opt-d" class="input-box" style="margin-bottom: 0;">
+            </div>
+        </div>
+        
+        <!-- NHÓM ĐÚNG SAI -->
+        <div id="dung-sai-group" style="display:none;">
+            <div style="margin-bottom: 20px;">
+                <label class="answer-label">
+                    <input type="checkbox" id="ds-ans-a"> MỆNH ĐỀ A ĐÚNG
+                </label>
+                <input type="text" id="ds-opt-a" class="input-box" style="margin-bottom: 0;">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label class="answer-label">
+                    <input type="checkbox" id="ds-ans-b"> MỆNH ĐỀ B ĐÚNG
+                </label>
+                <input type="text" id="ds-opt-b" class="input-box" style="margin-bottom: 0;">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label class="answer-label">
+                    <input type="checkbox" id="ds-ans-c"> MỆNH ĐỀ C ĐÚNG
+                </label>
+                <input type="text" id="ds-opt-c" class="input-box" style="margin-bottom: 0;">
+            </div>
+            <div style="margin-bottom: 25px;">
+                <label class="answer-label">
+                    <input type="checkbox" id="ds-ans-d"> MỆNH ĐỀ D ĐÚNG
+                </label>
+                <input type="text" id="ds-opt-d" class="input-box" style="margin-bottom: 0;">
+            </div>
+        </div>
+        
+        <!-- NHÓM TRẢ LỜI NGẮN -->
+        <div id="tra-loi-ngan-group" style="display:none; margin-bottom: 25px;">
+            <label style="color: #4caf50; font-weight: bold; font-size: 15px; margin-bottom: 8px; display: block; text-transform: uppercase;">Nhập đáp án chính xác (VD: 5, x=2)</label>
+            <input type="text" id="answer-key" class="input-box" style="margin-bottom: 0;">
+        </div>
+        
+        <button id="btn-add" class="btn-blue">Thêm câu hỏi này</button>
+
+        <div id="preview-area" style="margin-top: 25px;"></div>
+        
+        <button id="btn-save" class="btn-green">Lưu đề thi và tạo Link</button>
         <div id="link-result" style="margin-top: 15px; text-align: center;"></div>
     </div>
 
+    <!-- KHU VỰC HỌC SINH LÀM BÀI -->
     <div id="quiz-panel" style="display:none; max-width: 800px; margin: auto; padding: 20px;">
         <div id="quiz-content"></div>
     </div>
 
+    <!-- KHU VỰC BẢNG XẾP HẠNG -->
     <div id="leaderboard-panel" style="display:none; max-width: 800px; margin: auto; padding: 20px;">
         <div id="leaderboard-content"></div>
-        <button onclick="location.reload()" style="margin-top: 20px; width: 100%; background: #5f6368; padding: 12px; border-radius: 8px; color: white; border: none; cursor: pointer;">Tạo bài tập khác</button>
+        <button onclick="location.reload()" style="margin-top: 20px; width: 100%; background: #5f6368; padding: 12px; border-radius: 8px; color: white; border: none; font-size: 16px; cursor: pointer;">Tạo bài tập khác</button>
     </div>
 
-    <script type="module" src="script.js?v=13"></script>
+    <script type="module" src="script.js?v=15"></script>
 </body>
 </html>
