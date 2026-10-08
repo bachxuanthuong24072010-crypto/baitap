@@ -260,7 +260,7 @@ function renderCurrentQuestion() {
 }
 
 // ==========================================
-// TÍNH NĂNG TRỢ LÝ AI (KỶ LUẬT THÉP VỀ LATEX)
+// TÍNH NĂNG TRỢ LÝ AI (HỆ THỐNG 2 AI NỐI TIẾP THEO Ý TƯỞNG CỦA BẠN)
 // ==========================================
 const rawTextInput = document.getElementById('ai-raw-text');
 const btnAiParse = document.getElementById('btn-ai-parse');
@@ -274,47 +274,62 @@ const MY_GEMINI_API_KEY = _p1 + _p2 + _p3;
 if (btnAiParse) {
     btnAiParse.addEventListener('click', async () => {
         const rawText = rawTextInput.value.trim();
-
         if (!rawText) return alert("Vui lòng dán nội dung câu hỏi thô vào ô!");
-
-        aiStatus.innerText = "⏳ AI đang đọc và phân tích... Vui lòng đợi nhé!";
+        
         btnAiParse.disabled = true;
 
-        const prompt = `
-Bạn là trợ lý giáo dục. Nhiệm vụ của bạn là phân tích câu hỏi thô và trả về định dạng JSON.
+        try {
+            // ----------------------------------------------------
+            // AI SỐ 1: BƯỚC DỊCH SANG LATEX
+            // ----------------------------------------------------
+            aiStatus.innerText = "⏳ Bước 1/2: AI đang dịch văn bản lộn xộn sang công thức Toán LaTeX...";
+            
+            const prompt1 = `Bạn là chuyên gia Toán học. Nhiệm vụ DUY NHẤT của bạn là đọc đoạn văn bản lộn xộn dưới đây, tìm tất cả các biểu thức Toán học (như "phân số", "tử số", "mẫu số", "mũ", "bình phương", "cộng", "trừ", "nhân", "chia", "phương trình", "bằng"...) và DỊCH TOÀN BỘ chúng sang mã Toán học LaTeX, bọc trong cặp dấu $$. 
+Giữ nguyên các chữ tiếng Việt bình thường. Tuyệt đối không giải bài, không tóm tắt, chỉ làm nhiệm vụ dịch công thức.
 
-🔥 LỆNH BẮT BUỘC (KỶ LUẬT THÉP VỀ LATEX):
-MỌI biểu thức Toán, Lý, Hóa (dù viết bằng số hay bằng chữ tiếng Việt như "bình phương", "cộng", "trừ", "căn") ĐỀU BẮT BUỘC PHẢI DỊCH SANG MÃ LATEX VÀ BỌC TRONG DẤU $$. NẾU KHÔNG LÀM SẼ BỊ PHẠT.
-- Ví dụ sai: "x bình phương trừ 5x cộng 6 bằng 0" -> Bắt buộc sửa thành đúng: "$$x^2 - 5x + 6 = 0$$"
-- Ví dụ sai: "x = 2 và x = 3" -> Bắt buộc sửa thành đúng: "$$x = 2$$ và $$x = 3$$"
+Ví dụ 1: "Giải phương trình x bình phương cộng 2x bằng 0" -> "Giải phương trình $$x^2 + 2x = 0$$"
+Ví dụ 2: "tử số là x mũ 3 trừ đi 1, mẫu số là x trừ 1" -> "tử số là $$x^3 - 1$$, mẫu số là $$x - 1$$"
+
+Văn bản cần dịch:
+"""${rawText}"""`;
+
+            const res1 = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt1 }] }] })
+            });
+            const data1 = await res1.json();
+            if (data1.error) throw new Error("Lỗi AI 1: " + data1.error.message); 
+            const latexText = data1.candidates[0].content.parts[0].text.trim();
+
+            // ----------------------------------------------------
+            // AI SỐ 2: BƯỚC TRÍCH XUẤT JSON (CHẠY NGẦM)
+            // ----------------------------------------------------
+            aiStatus.innerText = "⏳ Bước 2/2: AI đang trích xuất dữ liệu để tự động điền...";
+
+            const prompt2 = `Nhiệm vụ của bạn là đọc câu hỏi đã được format công thức dưới đây và trích xuất thành định dạng JSON.
+Tuyệt đối giữ nguyên mọi công thức $$...$$ trong văn bản, BÊ NGUYÊN XI chúng vào các giá trị của JSON.
 
 Có 3 loại câu hỏi (type): "trac-nghiem", "dung-sai", "tra-loi-ngan".
-1. Nếu là trắc nghiệm 1 đáp án đúng:
-   JSON: {"type": "trac-nghiem", "question": "Nội dung câu", "options": ["đáp án A", "đáp án B", "đáp án C", "đáp án D"], "correctIndex": 0} (correctIndex từ 0 đến 3).
+1. Nếu là trắc nghiệm:
+   JSON: {"type": "trac-nghiem", "question": "Nội dung câu", "options": ["đáp án A", "đáp án B", "đáp án C", "đáp án D"], "correctIndex": 0} 
 2. Nếu là Đúng/Sai nhiều ý:
    JSON: {"type": "dung-sai", "question": "Nội dung câu", "statements": [{"text": "ý 1", "isTrue": true/false}, {"text": "ý 2", "isTrue": true/false}, {"text": "ý 3", "isTrue": true/false}, {"text": "ý 4", "isTrue": true/false}]}
 3. Nếu là trả lời ngắn:
    JSON: {"type": "tra-loi-ngan", "question": "Nội dung câu hỏi", "answerKey": "đáp án"}
 
-Câu hỏi thô cần phân tích:
-"""${rawText}"""
+Câu hỏi cần phân tích:
+"""${latexText}"""
 
-CHÚ Ý: Chỉ trả về ĐÚNG 1 chuỗi JSON hợp lệ, tuyệt đối không bọc trong dấu \`\`\`json.
-        `;
+CHÚ Ý: Chỉ trả về ĐÚNG 1 chuỗi JSON hợp lệ, không bọc trong dấu markdown.`;
 
-        try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
+            const res2 = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt2 }] }] })
             });
+            const data2 = await res2.json();
+            if (data2.error) throw new Error("Lỗi AI 2: " + data2.error.message); 
 
-            const data = await response.json();
-            if (data.error) throw new Error(data.error.message); 
-
-            let aiText = data.candidates[0].content.parts[0].text.trim();
+            let aiText = data2.candidates[0].content.parts[0].text.trim();
             if (aiText.startsWith("```json")) aiText = aiText.replace(/```json/g, "").replace(/```/g, "").trim();
             if (aiText.startsWith("```")) aiText = aiText.replace(/```/g, "").trim();
 
@@ -345,7 +360,7 @@ CHÚ Ý: Chỉ trả về ĐÚNG 1 chuỗi JSON hợp lệ, tuyệt đối khôn
                 document.getElementById('answer-key').value = result.answerKey;
             }
 
-            aiStatus.innerText = "✅ AI đã điền xong! Bạn hãy kiểm tra lại và bấm 'Thêm câu hỏi này'.";
+            aiStatus.innerText = "✅ Hệ thống 2 AI đã xử lý xong! Bạn hãy kiểm tra lại và bấm 'Thêm câu hỏi này'.";
             rawTextInput.value = ''; 
         } catch (error) {
             console.error(error);
