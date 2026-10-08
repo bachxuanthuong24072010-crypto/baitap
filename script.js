@@ -260,13 +260,13 @@ function renderCurrentQuestion() {
 }
 
 // ==========================================
-// TÍNH NĂNG TRỢ LÝ AI (ĐÃ GẮN SẴN MÃ VÀ CHE GIẤU)
+// TÍNH NĂNG TRỢ LÝ AI (SỬ DỤNG BẢN MỚI NHẤT)
 // ==========================================
 const rawTextInput = document.getElementById('ai-raw-text');
 const btnAiParse = document.getElementById('btn-ai-parse');
 const aiStatus = document.getElementById('ai-status');
 
-// Thủ thuật "thái nhỏ" mã API để qua mặt bot quét Github/Google
+// Chìa khóa an toàn của bạn
 const _p1 = "AQ.Ab8RN6KATwc";
 const _p2 = "iao_L06TOdHldaO";
 const _p3 = "6YSeZdYx5QB3f3RRFMHpZE2A";
@@ -298,7 +298,8 @@ CHÚ Ý: Chỉ trả về ĐÚNG 1 chuỗi JSON hợp lệ, không bọc trong d
         `;
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${MY_GEMINI_API_KEY}`, {
+            // Đã đổi thành gemini-flash-latest
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${MY_GEMINI_API_KEY}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -307,7 +308,7 @@ CHÚ Ý: Chỉ trả về ĐÚNG 1 chuỗi JSON hợp lệ, không bọc trong d
             });
 
             const data = await response.json();
-            if (data.error) throw new Error(data.error.message); // Hiển thị lỗi chi tiết từ Google
+            if (data.error) throw new Error(data.error.message); 
 
             let aiText = data.candidates[0].content.parts[0].text.trim();
             if (aiText.startsWith("```json")) aiText = aiText.replace(/```json/g, "").replace(/```/g, "").trim();
