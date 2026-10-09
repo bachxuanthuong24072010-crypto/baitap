@@ -23,14 +23,28 @@ let quizStats = {
     'tra-loi-ngan': { correct: 0, total: 0 }
 };
 
+// 🌟 ĐIỀU HƯỚNG THÔNG MINH
 const urlParams = new URLSearchParams(window.location.search);
 const quizId = urlParams.get('id');
+const viewMode = urlParams.get('view');
 
 if (quizId) {
-    document.getElementById('quiz-panel').style.display = 'block';
-    loadQuiz(quizId);
+    document.getElementById('admin-panel').style.display = 'none';
+    if (viewMode === 'lb') {
+        // NẾU CÓ CHỮ view=lb Ở LINK -> MỞ THẲNG BẢNG XẾP HẠNG
+        document.getElementById('quiz-panel').style.display = 'none';
+        document.getElementById('leaderboard-panel').style.display = 'block';
+        showLeaderboard(quizId);
+    } else {
+        // HỌC SINH MỞ LINK BÌNH THƯỜNG -> VÀO LÀM BÀI
+        document.getElementById('quiz-panel').style.display = 'block';
+        document.getElementById('leaderboard-panel').style.display = 'none';
+        loadQuiz(quizId);
+    }
 } else {
     document.getElementById('admin-panel').style.display = 'block';
+    document.getElementById('quiz-panel').style.display = 'none';
+    document.getElementById('leaderboard-panel').style.display = 'none';
 }
 
 const toggleBulk = document.getElementById('toggle-bulk');
@@ -52,7 +66,9 @@ if (btnBulkAdd) {
         let textRaw = document.getElementById('bulk-input').value.trim();
         if (!textRaw) return alert("Vui lòng dán văn bản câu hỏi vào ô nhé!");
 
-        let text = textRaw.replace(/([^\n])(Câu\s*\d+:|Bài\s*\d+:|A\.|B\.|C\.|D\.|Đáp án:)/gi, '$1\n$2');
+        let text = textRaw
+            .replace(/([^\n])\s*(Câu\s*\d+:|Bài\s*\d+:|Đáp án:)/gi, '$1\n$2')
+            .replace(/([^\n])\s+(A\.|B\.|C\.|D\.)/g, '$1\n$2');
 
         const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
         let currentQ = null;
@@ -241,7 +257,6 @@ function renderPreview() {
     });
     document.getElementById('preview-area').innerHTML = html;
     
-    // NÂNG CẤP DỊCH MỌI KÝ HIỆU TOÁN (1 DẤU $ HOẶC 2 DẤU $$)
     if (typeof renderMathInElement === "function") {
         renderMathInElement(document.getElementById('preview-area'), { 
             delimiters: [
@@ -270,8 +285,9 @@ document.getElementById('btn-save').addEventListener('click', async () => {
             leaderboard: [] 
         });
         
-        saveBtn.innerText = "Đang nén Link cho ngắn lại...";
+        // 🌟 TẠO 2 ĐƯỜNG LINK: 1 CHO HỌC SINH, 1 CHO GIÁO VIÊN
         const longLink = `${window.location.origin + window.location.pathname}?id=${docRef.id}`;
+        const teacherLink = `${longLink}&view=lb`; // Link Xem điểm luôn
         let finalLink = longLink;
         
         try {
@@ -284,10 +300,16 @@ document.getElementById('btn-save').addEventListener('click', async () => {
         }
 
         document.getElementById('link-result').innerHTML = `
-            <div style="background: #e8f0fe; color: #1a73e8; padding: 15px; border-radius: 8px; margin-top: 15px;">
-                <b style="font-size: 16px;">✨ Link bài tập của bạn đã sẵn sàng:</b><br><br>
-                <a href="${finalLink}" style="font-size: 20px; font-weight: bold; text-decoration: underline;" target="_blank">${finalLink}</a>
-                <p style="margin-top: 10px; font-size: 13px; color: #5f6368;">(Hãy copy link ngắn này để gửi cho học sinh nhé)</p>
+            <div style="background: #e8f0fe; color: #1a73e8; padding: 20px; border-radius: 8px; margin-top: 15px; text-align: left;">
+                <b style="font-size: 18px;">✨ Xong! Dưới đây là 2 link dành cho bạn:</b><br><br>
+                
+                <span style="color: #5f6368; font-size: 14px; font-weight: bold;">1. GỬI CHO HỌC SINH (Link làm bài):</span><br>
+                <a href="${finalLink}" style="font-size: 18px; font-weight: bold; text-decoration: underline;" target="_blank">${finalLink}</a>
+                <br><br>
+                
+                <span style="color: #5f6368; font-size: 14px; font-weight: bold;">2. DÀNH CHO BẠN (Link xem Bảng điểm):</span><br>
+                <a href="${teacherLink}" style="font-size: 16px; font-weight: bold; text-decoration: underline; color: #e91e63;" target="_blank">${teacherLink}</a>
+                <p style="margin-top: 10px; font-size: 14px; color: #3c4043; background: #fff; padding: 10px; border-radius: 6px;">💡 Mẹo: Bạn hãy bấm vào Link số 2 (Màu hồng) để trực tiếp mở bảng điểm. Lúc đó bạn cứ <b>ấn F5 thoải mái</b> để làm mới điểm của học sinh mà không bị bắt làm lại từ đầu bài thi!</p>
             </div>
         `;
     } catch (error) { alert("Lỗi kết nối: " + error.message); } 
@@ -370,6 +392,12 @@ function renderCurrentQuestion() {
                         timestamp: new Date().toISOString()
                     })
                 });
+                
+                // 🌟 TỰ ĐỘNG ĐỔI URL SAU KHI LƯU (ĐỂ ẤN F5 KHÔNG LÀM LẠI BÀI)
+                if(!window.location.href.includes('view=lb')){
+                    window.history.pushState({}, '', window.location.href + '&view=lb');
+                }
+                
                 showLeaderboard(quizId);
             } catch(e) {
                 alert("Lỗi khi lưu điểm: " + e.message);
@@ -402,7 +430,6 @@ function renderCurrentQuestion() {
     html += `<button id="btn-next" style="margin-top: 15px; width: 100%; padding: 14px; font-size: 16px; background:#8ab4f8; color:#202124; border:none; border-radius:4px; cursor:pointer;">Chuyển câu tiếp</button>`;
     container.innerHTML = html;
 
-    // NÂNG CẤP DỊCH MỌI KÝ HIỆU TOÁN (1 DẤU $ HOẶC 2 DẤU $$)
     if (typeof renderMathInElement === "function") {
         renderMathInElement(container, { 
             delimiters: [
@@ -513,6 +540,14 @@ async function showLeaderboard(id) {
         }
         
         html += `</tbody></table></div>`;
+        
+        // 🌟 BỘ NÚT ĐIỀU KHIỂN CHUYÊN NGHIỆP TRONG BẢNG ĐIỂM
+        html += `
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+            <button onclick="location.reload()" style="flex: 1; background: #8ab4f8; padding: 12px; border-radius: 8px; color: #202124; font-weight: bold; border: none; font-size: 16px; cursor: pointer;">🔄 Làm mới bảng điểm (F5)</button>
+            <button onclick="window.location.href = window.location.origin + window.location.pathname" style="flex: 1; background: #5f6368; padding: 12px; border-radius: 8px; color: white; border: none; font-size: 16px; cursor: pointer;">🏠 Về trang chủ tạo đề</button>
+        </div>`;
+        
         lbContent.innerHTML = html;
     } catch(e) {
         lbContent.innerHTML = "Lỗi tải dữ liệu: " + e.message;
