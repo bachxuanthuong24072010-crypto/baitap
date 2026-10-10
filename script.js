@@ -23,7 +23,9 @@ let quizStats = {
     'tra-loi-ngan': { correct: 0, total: 0 }
 };
 
-// 🌟 ĐIỀU HƯỚNG THÔNG MINH
+// ==========================================
+// 1. ĐIỀU HƯỚNG GIAO DIỆN (HỌC SINH / GIÁO VIÊN)
+// ==========================================
 const urlParams = new URLSearchParams(window.location.search);
 const quizId = urlParams.get('id');
 const viewMode = urlParams.get('view');
@@ -31,12 +33,10 @@ const viewMode = urlParams.get('view');
 if (quizId) {
     document.getElementById('admin-panel').style.display = 'none';
     if (viewMode === 'lb') {
-        // NẾU CÓ CHỮ view=lb Ở LINK -> MỞ THẲNG BẢNG XẾP HẠNG
         document.getElementById('quiz-panel').style.display = 'none';
         document.getElementById('leaderboard-panel').style.display = 'block';
         showLeaderboard(quizId);
     } else {
-        // HỌC SINH MỞ LINK BÌNH THƯỜNG -> VÀO LÀM BÀI
         document.getElementById('quiz-panel').style.display = 'block';
         document.getElementById('leaderboard-panel').style.display = 'none';
         loadQuiz(quizId);
@@ -60,15 +60,19 @@ if (toggleBulk) {
     });
 }
 
+// ==========================================
+// 2. TÍNH NĂNG NHẬP NHANH (KHỚP 100% VỚI PROMPT)
+// ==========================================
 const btnBulkAdd = document.getElementById('btn-bulk-add');
 if (btnBulkAdd) {
     btnBulkAdd.addEventListener('click', () => {
         let textRaw = document.getElementById('bulk-input').value.trim();
         if (!textRaw) return alert("Vui lòng dán văn bản câu hỏi vào ô nhé!");
 
+        // Lọc dính chữ dự phòng (Trường hợp AI cãi lệnh)
         let text = textRaw
             .replace(/([^\n])\s*(Câu\s*\d+:|Bài\s*\d+:|Đáp án:)/gi, '$1\n$2')
-            .replace(/([^\n])\s+(A\.|B\.|C\.|D\.)/g, '$1\n$2');
+            .replace(/([^\nA-Z])(A\.|B\.|C\.|D\.)/g, '$1\n$2');
 
         const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
         let currentQ = null;
@@ -77,6 +81,7 @@ if (btnBulkAdd) {
         function saveParsedQ(q) {
             if (q.options.length === 4) {
                 let rawAns = q.ansKey.toUpperCase().replace(/\s+/g, '');
+                // Kiểm tra xem đây là dạng Trắc nghiệm (1 đáp án) hay Đúng/Sai
                 if (rawAns === 'A' || rawAns === 'B' || rawAns === 'C' || rawAns === 'D') {
                     const cIndex = rawAns.charCodeAt(0) - 65;
                     window.danhSachCauHoi.push({
@@ -90,6 +95,7 @@ if (btnBulkAdd) {
                     });
                 } else {
                     let boolValues = [];
+                    // Khớp hoàn hảo với định dạng "Đáp án: Đ, S, Đ, S" của Prompt
                     let parts = q.ansKey.toUpperCase().split(/[,;.\-]/);
                     if (parts.length >= 4) {
                         parts.forEach(p => boolValues.push(p.includes('Đ') || p.includes('T')));
@@ -113,6 +119,7 @@ if (btnBulkAdd) {
                 }
             } 
             else if (q.options.length === 0) {
+                // Khớp hoàn hảo với định dạng Trả lời ngắn của Prompt
                 window.danhSachCauHoi.push({
                     type: "tra-loi-ngan", question: q.question, answerKey: q.ansKey
                 });
@@ -123,9 +130,7 @@ if (btnBulkAdd) {
             let line = lines[i];
             
             if (line.match(/^(Câu|Bài)\s*\d+:/i) || (!line.match(/^[A-D]\./i) && !line.match(/^Đáp án:/i) && !currentQ)) {
-                if (currentQ && currentQ.ansKey) {
-                    saveParsedQ(currentQ); addedCount++;
-                }
+                if (currentQ && currentQ.ansKey) { saveParsedQ(currentQ); addedCount++; }
                 currentQ = { question: line.replace(/^(Câu|Bài)\s*\d+:\s*/i, ''), options: [], ansKey: null };
             } 
             else if (line.match(/^[A-D]\./i) && currentQ) {
@@ -140,22 +145,21 @@ if (btnBulkAdd) {
                 currentQ.question += '\n' + line; 
             }
         }
-        if (currentQ && currentQ.ansKey) {
-            saveParsedQ(currentQ); addedCount++;
-        }
+        if (currentQ && currentQ.ansKey) { saveParsedQ(currentQ); addedCount++; }
 
         if (addedCount > 0) {
-            alert(`🎉 Thành công! Đã bóc tách và thêm ${addedCount} câu hỏi!`);
+            alert(`🎉 Thành công! Đã bóc tách chuẩn xác ${addedCount} câu hỏi!`);
             document.getElementById('bulk-input').value = ''; 
             renderPreview();
             document.getElementById('bulk-area').style.display = 'none';
             document.getElementById('bulk-icon').innerText = '▼';
         } else {
-            alert("❌ Không tìm thấy câu hỏi hợp lệ. Bạn nhớ kiểm tra chữ 'Đáp án: ...' nhé!");
+            alert("❌ Không tìm thấy câu hỏi. Hãy đưa Prompt cho AI để nó viết lại chuẩn xác nhé!");
         }
     });
 }
 
+// CÁC HÀM XỬ LÝ GIAO DIỆN (Giữ nguyên độ ổn định)
 const questionType = document.getElementById('question-type');
 if (questionType) {
     function updateFormDisplay() {
@@ -167,61 +171,12 @@ if (questionType) {
         if(gNghiem) gNghiem.style.display = (type === 'trac-nghiem') ? 'block' : 'none';
         if(gSai) gSai.style.display = (type === 'dung-sai') ? 'block' : 'none';
         if(gLoi) gLoi.style.display = (type === 'tra-loi-ngan') ? 'block' : 'none';
-        
-        const hNghiem = document.getElementById('bulk-hint-trac-nghiem');
-        const hSai = document.getElementById('bulk-hint-dung-sai');
-        const hLoi = document.getElementById('bulk-hint-tra-loi-ngan');
-        
-        if(hNghiem) hNghiem.style.display = (type === 'trac-nghiem') ? 'block' : 'none';
-        if(hSai) hSai.style.display = (type === 'dung-sai') ? 'block' : 'none';
-        if(hLoi) hLoi.style.display = (type === 'tra-loi-ngan') ? 'block' : 'none';
     }
     questionType.addEventListener('change', updateFormDisplay);
     updateFormDisplay();
 }
 
-document.getElementById('btn-add').addEventListener('click', () => {
-    const questionText = document.getElementById('question').value.trim();
-    const type = document.getElementById('question-type').value;
-
-    if (!questionText) return alert("Vui lòng nhập câu hỏi!");
-
-    if (type === 'trac-nghiem') {
-        const checkedEl = document.querySelector('input[name="correct-answer"]:checked');
-        const correctIndex = checkedEl ? parseInt(checkedEl.value) : 0;
-        window.danhSachCauHoi.push({
-            type: "trac-nghiem", question: questionText,
-            options: [
-                { text: document.getElementById('opt-a').value, isCorrect: correctIndex === 0 },
-                { text: document.getElementById('opt-b').value, isCorrect: correctIndex === 1 },
-                { text: document.getElementById('opt-c').value, isCorrect: correctIndex === 2 },
-                { text: document.getElementById('opt-d').value, isCorrect: correctIndex === 3 }
-            ]
-        });
-    } else if (type === 'dung-sai') {
-        window.danhSachCauHoi.push({
-            type: "dung-sai", question: questionText,
-            statements: ['a', 'b', 'c', 'd'].map(id => ({
-                text: document.getElementById(`ds-opt-${id}`).value.trim(),
-                isTrue: document.getElementById(`ds-ans-${id}`).checked 
-            }))
-        });
-    } else {
-        window.danhSachCauHoi.push({
-            type: "tra-loi-ngan", question: questionText, answerKey: document.getElementById('answer-key').value.trim()
-        });
-    }
-    
-    document.getElementById('question').value = '';
-    ['a', 'b', 'c', 'd'].forEach(id => {
-        if(document.getElementById(`opt-${id}`)) document.getElementById(`opt-${id}`).value = '';
-        if(document.getElementById(`ds-opt-${id}`)) document.getElementById(`ds-opt-${id}`).value = '';
-        if(document.getElementById(`ds-ans-${id}`)) document.getElementById(`ds-ans-${id}`).checked = false;
-    });
-    if(document.getElementById('answer-key')) document.getElementById('answer-key').value = '';
-    renderPreview();
-});
-
+// HIỂN THỊ DANH SÁCH & TOÁN HỌC (Nhận mọi loại kí hiệu Đô-la)
 function renderPreview() {
     let html = `<h3>Danh sách đã thêm (${window.danhSachCauHoi.length} câu - Có thể sửa trực tiếp):</h3>`;
     window.danhSachCauHoi.forEach((cau, i) => {
@@ -257,6 +212,7 @@ function renderPreview() {
     });
     document.getElementById('preview-area').innerHTML = html;
     
+    // KaTeX render: Hỗ trợ cả $ (Luật mới) và $$ (Luật cũ)
     if (typeof renderMathInElement === "function") {
         renderMathInElement(document.getElementById('preview-area'), { 
             delimiters: [
@@ -270,6 +226,9 @@ function renderPreview() {
 }
 window.renderPreview = renderPreview;
 
+// ==========================================
+// 3. TẠO LINK CHIA SẺ VÀ LƯU DATABASE
+// ==========================================
 document.getElementById('btn-save').addEventListener('click', async () => {
     if (window.danhSachCauHoi.length === 0) return alert("Chưa có câu hỏi nào để tạo link!");
     
@@ -285,9 +244,8 @@ document.getElementById('btn-save').addEventListener('click', async () => {
             leaderboard: [] 
         });
         
-        // 🌟 TẠO 2 ĐƯỜNG LINK: 1 CHO HỌC SINH, 1 CHO GIÁO VIÊN
         const longLink = `${window.location.origin + window.location.pathname}?id=${docRef.id}`;
-        const teacherLink = `${longLink}&view=lb`; // Link Xem điểm luôn
+        const teacherLink = `${longLink}&view=lb`; 
         let finalLink = longLink;
         
         try {
@@ -301,21 +259,24 @@ document.getElementById('btn-save').addEventListener('click', async () => {
 
         document.getElementById('link-result').innerHTML = `
             <div style="background: #e8f0fe; color: #1a73e8; padding: 20px; border-radius: 8px; margin-top: 15px; text-align: left;">
-                <b style="font-size: 18px;">✨ Xong! Dưới đây là 2 link dành cho bạn:</b><br><br>
+                <b style="font-size: 18px;">✨ Đề thi của bạn đã xuất xưởng thành công:</b><br><br>
                 
                 <span style="color: #5f6368; font-size: 14px; font-weight: bold;">1. GỬI CHO HỌC SINH (Link làm bài):</span><br>
                 <a href="${finalLink}" style="font-size: 18px; font-weight: bold; text-decoration: underline;" target="_blank">${finalLink}</a>
                 <br><br>
                 
-                <span style="color: #5f6368; font-size: 14px; font-weight: bold;">2. DÀNH CHO BẠN (Link xem Bảng điểm):</span><br>
+                <span style="color: #5f6368; font-size: 14px; font-weight: bold;">2. DÀNH CHO BẠN (Link xem Bảng điểm trực tiếp):</span><br>
                 <a href="${teacherLink}" style="font-size: 16px; font-weight: bold; text-decoration: underline; color: #e91e63;" target="_blank">${teacherLink}</a>
-                <p style="margin-top: 10px; font-size: 14px; color: #3c4043; background: #fff; padding: 10px; border-radius: 6px;">💡 Mẹo: Bạn hãy bấm vào Link số 2 (Màu hồng) để trực tiếp mở bảng điểm. Lúc đó bạn cứ <b>ấn F5 thoải mái</b> để làm mới điểm của học sinh mà không bị bắt làm lại từ đầu bài thi!</p>
+                <p style="margin-top: 10px; font-size: 14px; color: #3c4043; background: #fff; padding: 10px; border-radius: 6px;">💡 Mẹo: Bấm link số 2 để xem điểm. Bạn có thể F5 liên tục để theo dõi điểm học sinh nộp về theo thời gian thực!</p>
             </div>
         `;
     } catch (error) { alert("Lỗi kết nối: " + error.message); } 
     finally { saveBtn.innerText = "Lưu đề thi và tạo Link"; saveBtn.disabled = false; }
 });
 
+// ==========================================
+// 4. HIỂN THỊ ĐỀ THI CHO HỌC SINH
+// ==========================================
 async function loadQuiz(id) {
     try {
         const docSnap = await getDoc(doc(db, "quizzes", id));
@@ -325,7 +286,6 @@ async function loadQuiz(id) {
             quizTitleGlobal = data.title || "Bài Tập Trắc Nghiệm";
             
             document.title = quizTitleGlobal;
-
             currentQuestionIndex = 0;
             quizStats = {
                 'trac-nghiem': { correct: 0, total: 0 },
@@ -343,7 +303,6 @@ function renderCurrentQuestion() {
 
     if (currentQuestionIndex >= quizDataGlobal.length) {
         let resultDetails = "";
-        
         let totalPossible = quizStats['trac-nghiem'].total + quizStats['tra-loi-ngan'].total + quizStats['dung-sai'].total;
         let earned = quizStats['trac-nghiem'].correct + quizStats['tra-loi-ngan'].correct;
         
@@ -393,11 +352,9 @@ function renderCurrentQuestion() {
                     })
                 });
                 
-                // 🌟 TỰ ĐỘNG ĐỔI URL SAU KHI LƯU (ĐỂ ẤN F5 KHÔNG LÀM LẠI BÀI)
                 if(!window.location.href.includes('view=lb')){
                     window.history.pushState({}, '', window.location.href + '&view=lb');
                 }
-                
                 showLeaderboard(quizId);
             } catch(e) {
                 alert("Lỗi khi lưu điểm: " + e.message);
@@ -430,6 +387,7 @@ function renderCurrentQuestion() {
     html += `<button id="btn-next" style="margin-top: 15px; width: 100%; padding: 14px; font-size: 16px; background:#8ab4f8; color:#202124; border:none; border-radius:4px; cursor:pointer;">Chuyển câu tiếp</button>`;
     container.innerHTML = html;
 
+    // Render Math cho Câu hỏi học sinh
     if (typeof renderMathInElement === "function") {
         renderMathInElement(container, { 
             delimiters: [
@@ -497,6 +455,9 @@ function renderCurrentQuestion() {
     });
 }
 
+// ==========================================
+// 5. HIỂN THỊ BẢNG XẾP HẠNG
+// ==========================================
 async function showLeaderboard(id) {
     document.getElementById('quiz-panel').style.display = 'none';
     document.getElementById('leaderboard-panel').style.display = 'block';
@@ -541,7 +502,6 @@ async function showLeaderboard(id) {
         
         html += `</tbody></table></div>`;
         
-        // 🌟 BỘ NÚT ĐIỀU KHIỂN CHUYÊN NGHIỆP TRONG BẢNG ĐIỂM
         html += `
         <div style="display: flex; gap: 10px; margin-top: 20px;">
             <button onclick="location.reload()" style="flex: 1; background: #8ab4f8; padding: 12px; border-radius: 8px; color: #202124; font-weight: bold; border: none; font-size: 16px; cursor: pointer;">🔄 Làm mới bảng điểm (F5)</button>
